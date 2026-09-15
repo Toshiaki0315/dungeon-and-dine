@@ -11,7 +11,7 @@ from typing import Any
 
 from game.data_loader import dataclass_from_dict
 from game.entities.entity import Entity
-from game.entities.item import ItemInstance
+from game.entities.item import SLOT_WEAPON, SLOTS, ItemInstance
 from game.world.direction import FACINGS
 
 PLAYER_NAME = "レオ"
@@ -37,6 +37,10 @@ class PlayerParams:
         return dataclass_from_dict(cls, data, "player")
 
 
+def _empty_equipment() -> dict[str, ItemInstance | None]:
+    return dict.fromkeys(SLOTS)
+
+
 @dataclass
 class Player(Entity):
     name: str = PLAYER_NAME
@@ -44,7 +48,7 @@ class Player(Entity):
     exp: int = 0
     gold: int = 0
     hp: int = 1
-    max_hp: int = 1
+    max_hp: int = 1  # 鎧のボーナスと最大HP減少を反映した値
     mp: int = 0
     max_mp: int = 0
     atk: int = 0
@@ -54,7 +58,7 @@ class Player(Entity):
     satiety: int = 0
     max_satiety: int = 0
     satiety_progress: int = 0  # 満腹度が1減るまでの蓄積（% 単位）
-    weapon: ItemInstance | None = None  # 装備の着脱はフェーズ4で実装する
+    equipment: dict[str, ItemInstance | None] = field(default_factory=_empty_equipment)
     skills: list[str] = field(default_factory=list)
 
     @classmethod
@@ -76,5 +80,15 @@ class Player(Entity):
         )
 
     @property
+    def weapon(self) -> ItemInstance | None:
+        return self.equipment[SLOT_WEAPON]
+
+    @property
     def sprite_name(self) -> str:
         return f"{PLAYER_SPRITE_BASE}_{self.facing.sprite_facing}"
+
+    def is_equipped(self, item: ItemInstance) -> bool:
+        return any(equipped is item for equipped in self.equipment.values())
+
+    def equipped_items(self) -> list[ItemInstance]:
+        return [item for item in self.equipment.values() if item is not None]

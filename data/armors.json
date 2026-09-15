@@ -1,4 +1,29 @@
 {
   "version": 1,
-  "armors": []
+  "armors": [
+    {"id": "wooden_shield", "name": "木の盾", "slot": "shield", "sprite": "armor_shield", "price": null, "spawn_weight": 8,
+     "defense": 2, "block_rate": 15, "description": "ときどき敵の攻撃を防ぐ。"},
+    {"id": "iron_shield", "name": "鉄の盾", "slot": "shield", "sprite": "armor_shield", "price": null, "spawn_weight": 5,
+     "defense": 4, "block_rate": 15, "description": "ときどき敵の攻撃を防ぐ。"},
+    {"id": "tower_shield", "name": "大盾", "slot": "shield", "sprite": "armor_shield", "price": null, "spawn_weight": 2,
+     "defense": 5, "block_rate": 15, "description": "重く頑丈な盾。ときどき敵の攻撃を防ぐ。"},
+    {"id": "leather_cap", "name": "革の帽子", "slot": "helmet", "sprite": "armor_helmet", "price": null, "spawn_weight": 8,
+     "defense": 1, "sight_bonus": 1, "description": "通路で周りがよく見える。"},
+    {"id": "iron_helm", "name": "鉄兜", "slot": "helmet", "sprite": "armor_helmet", "price": null, "spawn_weight": 5,
+     "defense": 2, "status_resist": true, "description": "状態異常にかかりにくくなる。"},
+    {"id": "crested_helm", "name": "羽根飾りの兜", "slot": "helmet", "sprite": "armor_helmet", "price": null, "spawn_weight": 2,
+     "defense": 3, "sight_bonus": 1, "status_resist": true, "description": "周りがよく見え、状態異常にもかかりにくい。"},
+    {"id": "leather_armor", "name": "革の鎧", "slot": "armor", "sprite": "armor_body", "price": null, "spawn_weight": 8,
+     "defense": 3, "max_hp_bonus": 5, "description": "最大HPが5増える。"},
+    {"id": "chain_mail", "name": "鎖かたびら", "slot": "armor", "sprite": "armor_body", "price": null, "spawn_weight": 5,
+     "defense": 5, "max_hp_bonus": 10, "description": "最大HPが10増える。"},
+    {"id": "plate_armor", "name": "板金鎧", "slot": "armor", "sprite": "armor_body", "price": null, "spawn_weight": 2,
+     "defense": 8, "max_hp_bonus": 15, "description": "最大HPが15増える。"},
+    {"id": "sandals", "name": "草履", "slot": "shoes", "sprite": "armor_shoes", "price": null, "spawn_weight": 8,
+     "defense": 0, "trap_find_bonus": 20, "hunger_rate_percent": 80, "description": "罠を見つけやすく、おなかが減りにくい。"},
+    {"id": "leather_boots", "name": "革の靴", "slot": "shoes", "sprite": "armor_shoes", "price": null, "spawn_weight": 5,
+     "defense": 1, "trap_find_bonus": 20, "trap_avoid_rate": 10, "hunger_rate_percent": 80, "description": "罠を見つけやすく、おなかが減りにくい。ときどき罠を踏んでも発動しない。"},
+    {"id": "iron_boots", "name": "鉄の靴", "slot": "shoes", "sprite": "armor_shoes", "price": null, "spawn_weight": 2,
+     "defense": 2, "trap_find_bonus": 20, "trap_avoid_rate": 20, "hunger_rate_percent": 80, "description": "罠を見つけやすく、おなかが減りにくい。罠を踏んでも発動しにくい。"}
+  ]
 }

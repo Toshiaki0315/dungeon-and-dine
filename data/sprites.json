@@ -168,28 +168,48 @@
       "v": 24,
       "frames": 1
     },
-    "weapon_knife": {
+    "armor_shield": {
       "u": 88,
       "v": 24,
       "frames": 1
     },
-    "weapon_spear": {
+    "armor_helmet": {
       "u": 96,
       "v": 24,
       "frames": 1
     },
-    "weapon_whip": {
+    "armor_body": {
       "u": 104,
       "v": 24,
       "frames": 1
     },
-    "weapon_bow": {
+    "armor_shoes": {
       "u": 112,
       "v": 24,
       "frames": 1
     },
-    "weapon_katana": {
+    "weapon_knife": {
       "u": 120,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_spear": {
+      "u": 128,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_whip": {
+      "u": 136,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_bow": {
+      "u": 144,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_katana": {
+      "u": 152,
       "v": 24,
       "frames": 1
     },

@@ -11,6 +11,7 @@ from typing import Any
 
 from game.data_loader import DataValidationError
 from game.entities.entity import Entity
+from game.entities.item import CHEST_CLOSED_SPRITE
 from game.systems.combat import CombatStats
 
 AI_CHASE = "chase"
@@ -28,7 +29,7 @@ MODE_CHASE = "chase"  # プレイヤー（または最後に見た位置）へ�
 ABILITY_ON_HIT_STATUS = "on_hit_status"
 ABILITY_BREATH = "breath"
 
-CHEST_SPRITE = "chest_closed"  # ミミックの擬態中の見た目
+CHEST_SPRITE = CHEST_CLOSED_SPRITE  # ミミックの擬態中の見た目
 
 
 @dataclass(frozen=True)

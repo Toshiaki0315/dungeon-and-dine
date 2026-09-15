@@ -204,7 +204,7 @@ def test_monster_on_hit_status():
 
 def test_bow_uses_arrows_and_hits_first_monster_only():
     state = new_state(rng_roll=50)
-    state.player.weapon = ItemInstance(CATALOG.items["bow"])
+    state.player.equipment["weapon"] = ItemInstance(CATALOG.items["bow"])
     state.inventory.add(ItemInstance(CATALOG.items["arrow"], 2))
     state.player.facing = Direction.RIGHT
     near = place_monster(state, "slime", hp=100)

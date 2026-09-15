@@ -10,8 +10,16 @@ from dataclasses import dataclass
 from typing import Any
 
 from game.data_loader import DataValidationError
-from game.entities.item import GOLD_ID, ItemDef, WeaponStats
-from game.entities.monster import ABILITY_ON_HIT_STATUS, CHEST_SPRITE, MonsterDef
+from game.entities.item import (
+    CATEGORY_ARMOR,
+    CATEGORY_WEAPON,
+    CHEST_CLOSED_SPRITE,
+    CHEST_OPEN_SPRITE,
+    GOLD_ID,
+    ItemDef,
+    WeaponStats,
+)
+from game.entities.monster import ABILITY_ON_HIT_STATUS, MonsterDef
 from game.systems.combat import REACHES
 from game.systems.skills import SKILL_ATTACK, SkillDef
 from game.systems.status import StatusDef
@@ -28,7 +36,7 @@ REQUIRED_STATUSES = (
 @dataclass(frozen=True)
 class Catalog:
     monsters: Mapping[str, MonsterDef]
-    items: Mapping[str, ItemDef]  # 武器も含む
+    items: Mapping[str, ItemDef]  # 武器・防具も含む
     unarmed: WeaponStats
     traps: Mapping[str, TrapDef]
     statuses: Mapping[str, StatusDef]
@@ -37,29 +45,30 @@ class Catalog:
 
     @classmethod
     def from_data(cls, data: Mapping[str, Mapping[str, Any]]) -> Catalog:
-        items = _by_id(
-            [ItemDef.from_dict(d, "items.json") for d in data["items"]["items"]]
-            + [ItemDef.from_dict({**d, "category": "weapon"}, "weapons.json")
-               for d in data["weapons"]["weapons"]],
-            "items.json / weapons.json",
-        )  # fmt: skip
+        item_defs = [ItemDef.from_dict(d, "items.json") for d in data["items"]["items"]]
+        item_defs += [
+            ItemDef.from_dict({**d, "category": CATEGORY_WEAPON}, "weapons.json")
+            for d in data["weapons"]["weapons"]
+        ]
+        item_defs += [
+            ItemDef.from_dict({**d, "category": CATEGORY_ARMOR}, "armors.json")
+            for d in data["armors"]["armors"]
+        ]
+        statuses = [StatusDef.from_dict(d) for d in data["status_effects"]["status_effects"]]
         catalog = cls(
             monsters=_by_id(
                 [MonsterDef.from_dict(d) for d in data["enemies"]["enemies"]], "enemies.json"
             ),
-            items=items,
+            items=_by_id(item_defs, "items.json / weapons.json / armors.json"),
             unarmed=WeaponStats.from_dict(data["weapons"]["unarmed"]),
             traps=_by_id([TrapDef.from_dict(d) for d in data["traps"]["traps"]], "traps.json"),
-            statuses=_by_id(
-                [StatusDef.from_dict(d) for d in data["status_effects"]["status_effects"]],
-                "status_effects.json",
-            ),
+            statuses=_by_id(statuses, "status_effects.json"),
             skills=_by_id([SkillDef.from_dict(d) for d in data["skills"]["skills"]], "skills.json"),
             spawn_tables={
                 int(entry["floor"]): {str(k): int(v) for k, v in entry["monsters"].items()}
                 for entry in data["floors"]["floors"]
             },
-        )  # fmt: skip
+        )
         catalog._validate()
         return catalog
 
@@ -67,17 +76,19 @@ class Catalog:
         return self.spawn_tables.get(floor_number, {})
 
     def sprite_names(self) -> set[str]:
-        """敵・アイテム・罠の定義が参照する sprites.json のキー。"""
-        names = {CHEST_SPRITE}
+        """敵・アイテム・宝箱・罠の定義が参照する sprites.json のキー。"""
+        names = {CHEST_CLOSED_SPRITE, CHEST_OPEN_SPRITE}
         names.update(m.sprite for m in self.monsters.values())
         names.update(i.sprite for i in self.items.values())
         names.update(t.sprite for t in self.traps.values())
         return names
 
     def _validate(self) -> None:
-        errors: list[str] = []
-        errors += [f"status_effects.json: {s} がありません" for s in REQUIRED_STATUSES
-                   if s not in self.statuses]  # fmt: skip
+        errors: list[str] = [
+            f"status_effects.json: {s} がありません"
+            for s in REQUIRED_STATUSES
+            if s not in self.statuses
+        ]
         if GOLD_ID not in self.items:
             errors.append("items.json: gold がありません")
         for monster in self.monsters.values():
@@ -90,8 +101,11 @@ class Catalog:
             if item.weapon is not None and item.weapon.reach not in REACHES:
                 errors.append(f"weapons.json: {item.id}: 攻撃範囲 {item.weapon.reach} が不正です")
             for effect in item.effects:
-                errors += [f"items.json: {item.id}: 状態異常 {s} がありません"
-                           for s in effect.statuses if s not in self.statuses]  # fmt: skip
+                errors += [
+                    f"items.json: {item.id}: 状態異常 {s} がありません"
+                    for s in effect.statuses
+                    if s not in self.statuses
+                ]
         for trap in self.traps.values():
             if trap.status is not None and trap.status not in self.statuses:
                 errors.append(f"traps.json: {trap.id}: 状態異常 {trap.status} がありません")

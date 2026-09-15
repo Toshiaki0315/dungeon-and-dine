@@ -59,6 +59,14 @@
     "items_max": 12,
     "traps_min": 3,
     "traps_max": 6,
+    "chests_min": 1,
+    "chests_max": 3,
+    "chest_trap_chance": 20,
+    "chest_contents": {
+      "equipment": 70,
+      "consumable": 20,
+      "gold": 10
+    },
     "gold_min": 10,
     "gold_max": 50,
     "gold_per_floor_ratio": 0.1,
@@ -72,6 +80,79 @@
   },
   "traps": {
     "search_chance": 10
+  },
+  "equipment": {
+    "modifier_weights": {
+      "-3": 1,
+      "-2": 2,
+      "-1": 4,
+      "0": 24,
+      "1": 10,
+      "2": 5,
+      "3": 3,
+      "4": 1,
+      "5": 1
+    },
+    "mark_chance": 20,
+    "curse_chance": 25,
+    "deep_curse_chance": 35,
+    "deep_curse_floor": 11,
+    "cursed_modifier_min": -3,
+    "cursed_modifier_max": -1,
+    "marks": [
+      {
+        "id": "fire",
+        "name": "炎",
+        "fire": true
+      },
+      {
+        "id": "critical",
+        "name": "会心",
+        "crit_bonus": 10
+      },
+      {
+        "id": "sturdy",
+        "name": "頑丈",
+        "sturdy": true
+      },
+      {
+        "id": "filling",
+        "name": "腹持ち",
+        "hunger_rate_percent": 80
+      }
+    ],
+    "curses": [
+      {
+        "id": "half_hit",
+        "name": "命中率半減",
+        "hit_percent": 50
+      },
+      {
+        "id": "skill_seal",
+        "name": "スキル封じ",
+        "skill_seal": true
+      },
+      {
+        "id": "hunger",
+        "name": "満腹度の減少2倍",
+        "hunger_rate_percent": 200
+      },
+      {
+        "id": "cooking",
+        "name": "料理の失敗率+30%",
+        "cook_fail_bonus": 30
+      },
+      {
+        "id": "sight",
+        "name": "視界-1",
+        "sight_bonus": -1
+      },
+      {
+        "id": "trap_blind",
+        "name": "罠を発見できない",
+        "no_trap_find": true
+      }
+    ]
   },
   "fov": {
     "corridor_adjacent": 1,

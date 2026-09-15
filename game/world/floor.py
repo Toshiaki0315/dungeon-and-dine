@@ -1,4 +1,4 @@
-"""1階層分の状態（タイル、部屋、敵、床アイテム、罠）とエリア定義。仕様書 5章。
+"""1階層分の状態（タイル、部屋、敵、床アイテム、宝箱、罠）とエリア定義。仕様書 5章。
 
 pyxel を import しないこと。
 """
@@ -13,7 +13,7 @@ from game.world.direction import Direction
 from game.world.tiles import WALKABLE_TILES, Tile
 
 if TYPE_CHECKING:
-    from game.entities.item import FloorItem
+    from game.entities.item import Chest, FloorItem
     from game.entities.monster import Monster
     from game.systems.traps import Trap
 
@@ -57,6 +57,7 @@ class Floor:
     stairs: tuple[int, int]
     monsters: list[Monster] = field(default_factory=list)  # 生成順
     items: list[FloorItem] = field(default_factory=list)
+    chests: list[Chest] = field(default_factory=list)
     traps: list[Trap] = field(default_factory=list)
 
     def __post_init__(self) -> None:
@@ -76,7 +77,7 @@ class Floor:
         return self.tile_at(x, y) in WALKABLE_TILES
 
     def can_move(self, x: int, y: int, direction: Direction) -> bool:
-        """地形だけを見て、その方向へ1歩進めるか（敵などは考慮しない）。"""
+        """地形だけを見て、その方向へ1歩進めるか（敵や宝箱は考慮しない）。"""
         nx, ny = x + direction.dx, y + direction.dy
         if not self.is_walkable(nx, ny):
             return False
@@ -101,6 +102,9 @@ class Floor:
 
     def item_at(self, x: int, y: int) -> FloorItem | None:
         return next((i for i in self.items if i.x == x and i.y == y), None)
+
+    def chest_at(self, x: int, y: int) -> Chest | None:
+        return next((c for c in self.chests if c.x == x and c.y == y), None)
 
     def trap_at(self, x: int, y: int) -> Trap | None:
         return next((t for t in self.traps if t.x == x and t.y == y), None)

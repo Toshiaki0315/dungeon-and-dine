@@ -34,6 +34,7 @@ REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
         "spawn",
         "ai",
         "traps",
+        "equipment",
         "fov",
         "inventory",
         "input",

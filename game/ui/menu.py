@@ -22,11 +22,11 @@ def draw_window(x: int, y: int, w: int, h: int) -> None:
 
 
 class ConfirmDialog:
-    """「はい／いいえ」の確認ダイアログ。"""
+    """「はい／いいえ」の確認ダイアログ。on_yes の戻り値は使わない。"""
 
     OPTIONS: tuple[str, str] = ("はい", "いいえ")
 
-    def __init__(self, message: str, on_yes: Callable[[], None]) -> None:
+    def __init__(self, message: str, on_yes: Callable[[], object]) -> None:
         self.message = message
         self.on_yes = on_yes
         self.selected = 0

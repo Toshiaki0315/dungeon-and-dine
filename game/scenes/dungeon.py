@@ -11,15 +11,25 @@ from enum import Enum, auto
 import pyxel
 
 from game import config
+from game.entities.item import ItemInstance
 from game.scenes import Scene
 from game.scenes.game_over import GameOverScene
-from game.systems.game_state import GameState, MoveResult
+from game.systems.game_state import EFFECT_CURSE, EquipResult, GameState, MoveResult
 from game.systems.progression import exp_to_next_level
 from game.ui import font, hud, minimap
 from game.ui.camera import camera_origin
 from game.ui.command_bar import COMMANDS, CommandBar, command_label, hit_test
+from game.ui.equipment_view import EquipmentView, EquipRequest
 from game.ui.input import Controls, MoveCommand, TurnCommand
-from game.ui.inventory_view import ACTION_DROP, ACTION_THROW, InventoryView, ItemRequest
+from game.ui.inventory_view import (
+    ACTION_DROP,
+    ACTION_EQUIP,
+    ACTION_TARGET,
+    ACTION_THROW,
+    ACTION_UNEQUIP,
+    InventoryView,
+    ItemRequest,
+)
 from game.ui.log import LogHistoryView, draw_recent
 from game.ui.menu import ConfirmDialog
 from game.ui.skill_view import SkillView
@@ -29,12 +39,14 @@ from game.world.fov import Visibility
 from game.world.tiles import SPRITE_NAMES, Tile
 
 FLOOR_BANNER_SECONDS = 2
+CURSE_FLASH_FRAMES = config.FPS
 
 COLOR_TEXT = 7
 COLOR_SUBTEXT = 13
 COLOR_FRAME = 1
 COLOR_DEBUG = 10
 COLOR_STATUS = 14
+COLOR_CURSE = 2  # 紫
 
 # 既知タイル（視界外）を暗く描くためのパレット置き換え（仕様書 2.3.1）
 KNOWN_TILE_PALETTE: dict[int, int] = {
@@ -57,7 +69,8 @@ class Mode(Enum):
 
     EXPLORE = auto()
     COMMAND_BAR = auto()
-    INVENTORY = auto()
+    INVENTORY = auto()  # 対象の選択（ITEM の対象・目利き）もこの画面で行う
+    EQUIPMENT = auto()
     SKILL_MENU = auto()
     FULL_MAP = auto()
     CONFIRM = auto()
@@ -85,9 +98,13 @@ class DungeonScene:
         self.command_bar = CommandBar()
         self.dialog: ConfirmDialog | None = None
         self.log_history = LogHistoryView(state.log)
-        self.inventory_view = InventoryView(state.inventory)
+        self.inventory_view = InventoryView(state.inventory, state.player.is_equipped)
+        self.equipment_view = EquipmentView(state)
         self.skill_view = SkillView()
+        # 対象の選択を待っているアイテム（"item"）またはスキル（"skill"）
+        self.pending_target: tuple[str, ItemInstance | str] | None = None
         self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
+        self.curse_flash_frames = 0
         self._last_floor = state.floor.number
 
     # --- update ---
@@ -97,8 +114,8 @@ class DungeonScene:
         direction_command = self.controls.direction_command()
         if self.debug and self.controls.triggered("debug"):
             self.show_debug = not self.show_debug
-        if self.banner_frames > 0:
-            self.banner_frames -= 1
+        self.banner_frames = max(0, self.banner_frames - 1)
+        self.curse_flash_frames = max(0, self.curse_flash_frames - 1)
 
         if self.mode in (Mode.EXPLORE, Mode.COMMAND_BAR) and self._handle_click():
             pass
@@ -108,6 +125,8 @@ class DungeonScene:
             self._update_command_bar()
         elif self.mode == Mode.INVENTORY:
             self._update_inventory()
+        elif self.mode == Mode.EQUIPMENT:
+            self._update_equipment()
         elif self.mode == Mode.SKILL_MENU:
             self._update_skill_menu()
         elif self.mode == Mode.FULL_MAP:
@@ -120,6 +139,8 @@ class DungeonScene:
         # 敵を見つけた・ダメージを受けたなどで、押しっぱなしの連続移動を止める
         if self.state.consume_interrupt():
             self.controls.interrupt_repeat()
+        if EFFECT_CURSE in self.state.consume_effects():
+            self.curse_flash_frames = CURSE_FLASH_FRAMES
         if self.state.floor.number != self._last_floor:
             self._last_floor = self.state.floor.number
             self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
@@ -171,11 +192,10 @@ class DungeonScene:
         if self.state.move_player(direction) != MoveResult.CONFIRM_TRAP:
             return
         self.controls.interrupt_repeat()
-        self.dialog = ConfirmDialog(
+        self._confirm(
             "罠がある。本当に乗りますか？",
             lambda: self.state.move_player(direction, confirm_trap=True),
         )
-        self.mode = Mode.CONFIRM
 
     def _update_command_bar(self) -> None:
         c = self.controls
@@ -202,15 +222,38 @@ class DungeonScene:
     def _update_inventory(self) -> None:
         result = self.inventory_view.update(self.controls)
         if result is True:
+            self.pending_target = None
             self.mode = Mode.EXPLORE
-        elif isinstance(result, ItemRequest):
+            return
+        if not isinstance(result, ItemRequest):
+            return
+        self.mode = Mode.EXPLORE
+        item = result.item
+        if result.kind == ACTION_TARGET:
+            self._use_on_target(item)
+        elif result.kind == ACTION_THROW:
+            self.state.throw_item(item)
+        elif result.kind == ACTION_DROP:
+            self.state.drop_item(item)
+        elif result.kind == ACTION_EQUIP:
+            self._equip(item)
+        elif result.kind == ACTION_UNEQUIP:
+            self.state.unequip(item)
+        else:
+            self._use_item(item)
+
+    def _update_equipment(self) -> None:
+        result = self.equipment_view.update(self.controls)
+        if result is True:
             self.mode = Mode.EXPLORE
-            if result.kind == ACTION_THROW:
-                self.state.throw_item(result.item)
-            elif result.kind == ACTION_DROP:
-                self.state.drop_item(result.item)
-            else:
-                self.state.use_item(result.item)
+        elif isinstance(result, EquipRequest):
+            self.mode = Mode.EXPLORE
+            if result.item is not None:
+                self._equip(result.item)
+                return
+            current = self.state.player.equipment[result.slot]
+            if current is not None:
+                self.state.unequip(current)
 
     def _update_skill_menu(self) -> None:
         result = self.skill_view.update(self.controls)
@@ -218,7 +261,52 @@ class DungeonScene:
             self.mode = Mode.EXPLORE
         elif isinstance(result, str):
             self.mode = Mode.EXPLORE
-            self.state.use_skill(result)
+            self._use_skill(result)
+
+    def _use_item(self, item: ItemInstance) -> None:
+        targets = self.state.item_targets(item)
+        if targets is None:
+            self.state.use_item(item)
+        elif not targets:
+            self.state.log.add("対象にできる装備を持っていない。")
+        else:
+            self.pending_target = ("item", item)
+            self.inventory_view.open_selection("どれに使う？", targets)
+            self.mode = Mode.INVENTORY
+
+    def _use_skill(self, skill_id: str) -> None:
+        targets = self.state.skill_targets(skill_id)
+        if targets is None:
+            self.state.use_skill(skill_id)
+        elif not targets:
+            self.state.log.add("見定められる装備を持っていない。")
+        else:
+            self.pending_target = ("skill", skill_id)
+            self.inventory_view.open_selection("どれを見定める？", targets)
+            self.mode = Mode.INVENTORY
+
+    def _use_on_target(self, target: ItemInstance) -> None:
+        pending, self.pending_target = self.pending_target, None
+        if pending is None:
+            return
+        kind, source = pending
+        if kind == "item" and isinstance(source, ItemInstance):
+            self.state.use_item(source, target)
+        elif isinstance(source, str):
+            self.state.use_skill(source, target)
+
+    def _equip(self, item: ItemInstance) -> None:
+        if self.state.equip(item) != EquipResult.NEEDS_CONFIRM:
+            return
+        if item.curse_known and item.cursed:
+            message = "呪われた装備です。装備しますか？"
+        else:
+            message = "正体のわからない装備です。装備しますか？"
+        self._confirm(message, lambda: self.state.equip(item, confirmed=True))
+
+    def _confirm(self, message: str, on_yes: Callable[[], object]) -> None:
+        self.dialog = ConfirmDialog(message, on_yes)
+        self.mode = Mode.CONFIRM
 
     def _close_on(self, toggle_action: str) -> None:
         if self.controls.triggered("cancel") or self.controls.triggered(toggle_action):
@@ -235,6 +323,9 @@ class DungeonScene:
         elif command_id == "items":
             self.inventory_view.open()
             self.mode = Mode.INVENTORY
+        elif command_id == "equipment":
+            self.equipment_view.open()
+            self.mode = Mode.EQUIPMENT
         elif command_id == "skills":
             self.skill_view.open(self.state.learned_skills())
             self.mode = Mode.SKILL_MENU
@@ -252,8 +343,7 @@ class DungeonScene:
         if not self.state.can_descend:
             self.state.log.add("これより下へは、まだ降りられない。")
             return
-        self.dialog = ConfirmDialog("階段を降りますか？", self.state.descend)
-        self.mode = Mode.CONFIRM
+        self._confirm("階段を降りますか？", self.state.descend)
 
     # --- draw ---
 
@@ -270,6 +360,7 @@ class DungeonScene:
 
         player = self.state.player
         self._draw_map()
+        self._draw_curse_flash()
         exp_next = exp_to_next_level(player.level, self.state.params.progression)
         hud.draw_status_bar(player, self._floor_label(), exp_next)
         self._draw_bottom_panel()
@@ -281,6 +372,8 @@ class DungeonScene:
 
         if self.mode == Mode.INVENTORY:
             self.inventory_view.draw()
+        elif self.mode == Mode.EQUIPMENT:
+            self.equipment_view.draw()
         elif self.mode == Mode.SKILL_MENU:
             self.skill_view.draw(player.mp)
         elif self.mode == Mode.CONFIRM and self.dialog is not None:
@@ -299,6 +392,9 @@ class DungeonScene:
 
         def screen_pos(x: int, y: int) -> tuple[int, int]:
             return (x - cam_x) * ts, config.MAP_TOP + (y - cam_y) * ts
+
+        def visible(pos: tuple[int, int]) -> bool:
+            return fog.state(*pos) == Visibility.VISIBLE
 
         pyxel.clip(0, config.MAP_TOP, config.SCREEN_WIDTH, config.MAP_VIEW_HEIGHT)
         # 既知タイルを暗いパレットで描いてから、視界内のタイルを通常の色で描く
@@ -322,15 +418,26 @@ class DungeonScene:
                         self.sprites.draw(trap.definition.sprite, sx, sy)
             pyxel.pal()
 
-        # アイテムと敵は視界内のものだけを描く（仕様書 5.4）
+        # アイテム・宝箱・敵は視界内のものだけを描く（仕様書 5.4。ミミックと宝箱を見分けさせない）
         for floor_item in floor.items:
-            if fog.state(*floor_item.pos) == Visibility.VISIBLE:
+            if visible(floor_item.pos):
                 self.sprites.draw(floor_item.item.definition.sprite, *screen_pos(*floor_item.pos))
+        for chest in floor.chests:
+            if visible(chest.pos):
+                self.sprites.draw(chest.sprite_name, *screen_pos(*chest.pos))
         for monster in floor.monsters:
-            if fog.state(*monster.pos) == Visibility.VISIBLE:
+            if visible(monster.pos):
                 self.sprites.draw(monster.sprite_name, *screen_pos(*monster.pos), frame)
         self.sprites.draw(player.sprite_name, *screen_pos(player.x, player.y), frame)
         pyxel.clip()
+
+    def _draw_curse_flash(self) -> None:
+        """呪いの発動: マップを紫色に点滅させる（仕様書 14章）。"""
+        if self.curse_flash_frames <= 0 or (self.curse_flash_frames // 4) % 2:
+            return
+        pyxel.dither(0.5)
+        pyxel.rect(0, config.MAP_TOP, config.SCREEN_WIDTH, config.MAP_VIEW_HEIGHT, COLOR_CURSE)
+        pyxel.dither(1.0)
 
     def _tile_sprite(self, tile: Tile) -> str:
         """エリア別の素材（例: wall_moss）があればそれを、なければ共通の素材を使う。"""

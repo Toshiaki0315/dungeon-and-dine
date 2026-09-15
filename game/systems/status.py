@@ -109,12 +109,14 @@ def try_inflict(
     rng: random.Random,
     chance: int = 100,
     duration: int | None = None,
+    *,
+    resist_all: bool = False,
 ) -> bool:
     """効果を付与する。異常は耐性で防いだり、かかる確率が半減したりする。"""
     if definition.kind == AILMENT:
         if definition.id == "poison" and "poison_resist" in statuses:
             return False
-        if "status_resist" in statuses:
+        if "status_resist" in statuses or resist_all:
             chance //= 2
     if chance < 100 and rng.randrange(100) >= chance:
         return False

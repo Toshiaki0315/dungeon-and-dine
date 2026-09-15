@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import random
 import secrets
+from collections.abc import Mapping
 
 
 def new_run_seed() -> int:
@@ -25,3 +26,18 @@ def floor_seed(run_seed: int, floor: int) -> int:
 def floor_rng(run_seed: int, floor: int) -> random.Random:
     """階層用の乱数生成器を返す。"""
     return random.Random(floor_seed(run_seed, floor))
+
+
+def weighted_choice(rng: random.Random, weights: Mapping[str, int]) -> str | None:
+    """重み付きで1つ選ぶ。重みが正のものがなければ None。"""
+    total = sum(w for w in weights.values() if w > 0)
+    if total <= 0:
+        return None
+    roll = rng.randrange(total)
+    for key, weight in weights.items():
+        if weight <= 0:
+            continue
+        if roll < weight:
+            return key
+        roll -= weight
+    return None

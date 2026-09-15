@@ -34,6 +34,7 @@
   - `game/systems/game_state.py` — ラン中の状態とターン進行の入口。ロジックのテストはここを操作する
   - `game/systems/catalog.py` — `data/` の敵・アイテム・罠・状態異常・スキルを読み込み、相互参照を検証する
   - `game/entities/ai.py` — 敵AI。`GameState` を `AIContext` として受け取る
+  - `game/systems/equipment.py` — 装備の生成（修正値・印・呪い）、装備による補正の合計、未鑑定を隠した説明文
 - `tests/helpers.py` — テスト用マップの作成（`make_floor`）と、出目を固定する乱数（`FixedRng`）
 - `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う
 - `game/ui/` — 描画・入力（文字描画は必ず `ui/font.py` の `draw_text` 経由）
