@@ -31,6 +31,13 @@ def is_japanese_available() -> bool:
     return _font is not None
 
 
+def text_width(s: str) -> int:
+    """文字列の描画幅（px）を返す。"""
+    if _font is not None:
+        return _font.text_width(s)
+    return len(s) * pyxel.FONT_WIDTH
+
+
 def draw_text(x: int, y: int, s: str, col: int) -> None:
     """文字列を描画する。"""
     if _font is not None:

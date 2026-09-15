@@ -1,10 +1,16 @@
 {
   "version": 1,
-  "map": {
+  "mapgen": {
     "width": 64,
     "height": 48,
     "rooms_min": 4,
-    "rooms_max": 9
+    "rooms_max": 9,
+    "leaf_min_w": 10,
+    "leaf_min_h": 8,
+    "room_min_w": 4,
+    "room_min_h": 3,
+    "room_max_w": 14,
+    "room_max_h": 9
   },
   "player": {
     "level": 1,

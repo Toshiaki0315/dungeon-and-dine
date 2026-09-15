@@ -2,5 +2,46 @@
   "version": 1,
   "tile_size": 8,
   "image_bank": 0,
-  "sprites": {}
+  "sprites": {
+    "floor": {
+      "u": 0,
+      "v": 0,
+      "frames": 1
+    },
+    "wall": {
+      "u": 8,
+      "v": 0,
+      "frames": 1
+    },
+    "corridor": {
+      "u": 16,
+      "v": 0,
+      "frames": 1
+    },
+    "stairs_down": {
+      "u": 24,
+      "v": 0,
+      "frames": 1
+    },
+    "leo_down": {
+      "u": 0,
+      "v": 8,
+      "frames": 2
+    },
+    "leo_up": {
+      "u": 16,
+      "v": 8,
+      "frames": 2
+    },
+    "leo_left": {
+      "u": 32,
+      "v": 8,
+      "frames": 2
+    },
+    "leo_right": {
+      "u": 48,
+      "v": 8,
+      "frames": 2
+    }
+  }
 }

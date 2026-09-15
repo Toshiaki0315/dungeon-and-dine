@@ -32,6 +32,32 @@ def test_logic_layer_does_not_import_pyxel(path: Path):
     assert "pyxel" not in _imported_modules(path)
 
 
+def test_pyxel_text_is_called_only_in_font_module():
+    """マップやキャラクターを文字で描かないよう、pyxel.text は ui/font.py だけで使う。"""
+    offenders = []
+    for path in sorted(GAME_DIR.rglob("*.py")):
+        if path == GAME_DIR / "ui" / "font.py":
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr == "text"
+                and isinstance(node.value, ast.Name)
+                and node.value.id == "pyxel"
+            ):
+                offenders.append(f"{path.relative_to(GAME_DIR)}:{node.lineno}")
+    assert offenders == []
+
+
+def test_key_binding_names_exist_in_pyxel():
+    import pyxel
+
+    from game import config
+
+    missing = [n for names in config.KEY_BINDINGS.values() for n in names if not hasattr(pyxel, n)]
+    assert missing == []
+
+
 @pytest.mark.parametrize("path", _logic_files(), ids=lambda p: str(p.relative_to(GAME_DIR)))
 def test_logic_layer_does_not_use_global_random(path: Path):
     tree = ast.parse(path.read_text(encoding="utf-8"))

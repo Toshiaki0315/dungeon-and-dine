@@ -1,1 +1,35 @@
-"""sprites.json を介したスプライト描画。仕様書 2.3.1。"""
+"""sprites.json を介したスプライト描画。仕様書 2.3.1。
+
+素材の位置は sprites.json だけで決まるので、JSON を書き換えれば表示が切り替わる。
+"""
+
+from __future__ import annotations
+
+import pyxel
+
+from game import config
+from game.data_loader import SpriteDef
+
+
+class SpriteSheet:
+    def __init__(self, defs: dict[str, SpriteDef]) -> None:
+        self._defs = defs
+
+    def has(self, name: str) -> bool:
+        return name in self._defs
+
+    def draw(
+        self,
+        name: str,
+        x: int,
+        y: int,
+        frame: int = 0,
+        colkey: int | None = config.TRANSPARENT_COLOR,
+    ) -> None:
+        """スプライトを描く。frame はフレーム数で割った余りを使う（横に並んだ次のコマ）。"""
+        sprite = self._defs[name]
+        u = sprite.u + (frame % sprite.frames) * sprite.w
+        if colkey is None:
+            pyxel.blt(x, y, sprite.bank, u, sprite.v, sprite.w, sprite.h)
+        else:
+            pyxel.blt(x, y, sprite.bank, u, sprite.v, sprite.w, sprite.h, colkey)

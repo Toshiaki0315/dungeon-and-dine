@@ -32,11 +32,13 @@ BOSS_TILE_SIZE: int = 16
 STATUS_BAR_HEIGHT: int = 20
 MAP_VIEW_HEIGHT: int = 120
 BOTTOM_PANEL_HEIGHT: int = 40
+MAP_TOP: int = STATUS_BAR_HEIGHT
 MAP_VIEW_TILES_W: int = SCREEN_WIDTH // TILE_SIZE  # 40
 MAP_VIEW_TILES_H: int = MAP_VIEW_HEIGHT // TILE_SIZE  # 15
 
 LINE_HEIGHT: int = 10
 TRANSPARENT_COLOR: int = 0
+ANIMATION_TICKS: int = 15  # 待機アニメーションの1コマのフレーム数（0.5秒）
 
 # --- キー割り当て（仕様書 3.2） ---
 KEY_BINDINGS: dict[str, tuple[str, ...]] = {
@@ -48,6 +50,8 @@ KEY_BINDINGS: dict[str, tuple[str, ...]] = {
     "up_right": ("KEY_KP_9",),
     "down_left": ("KEY_KP_1",),
     "down_right": ("KEY_KP_3",),
+    "diagonal_modifier": ("KEY_SHIFT", "GAMEPAD1_BUTTON_LEFTSHOULDER"),
+    "turn_modifier": ("KEY_CTRL", "GAMEPAD1_BUTTON_RIGHTSHOULDER"),
     "confirm": ("KEY_SPACE", "KEY_RETURN", "GAMEPAD1_BUTTON_A"),
     "cancel": ("KEY_ESCAPE", "KEY_X", "GAMEPAD1_BUTTON_B"),
     "command_bar": ("KEY_TAB", "GAMEPAD1_BUTTON_X"),

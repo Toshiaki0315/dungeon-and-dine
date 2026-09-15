@@ -20,6 +20,7 @@
 - 起動: `.venv/bin/python main.py`（`--seed 123` でマップ再現、`--scale 2` で縮小表示）
 - テスト: `.venv/bin/pytest`
 - Lint / フォーマット: `.venv/bin/ruff check .` / `.venv/bin/ruff format .`
+- 仮素材の再生成: `.venv/bin/python tools/make_placeholder_sprites.py`（`resources.pyxres` と `data/sprites.json` を上書き）
 
 ## ディレクトリ構成
 

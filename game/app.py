@@ -4,35 +4,28 @@ from __future__ import annotations
 
 import pyxel
 
-from game import config, rng
+from game import config, data_loader, rng
+from game.entities.player import PLAYER_SPRITE_NAMES
 from game.scenes import Scene
+from game.scenes.dungeon import DungeonScene
 from game.ui import font
-
-
-class BootScene:
-    """開発開始用の仮シーン。フェーズ1で TitleScene / DungeonScene に置き換える。"""
-
-    def __init__(self, app: App) -> None:
-        self.app = app
-
-    def update(self) -> Scene | None:
-        if pyxel.btnp(pyxel.KEY_ESCAPE):
-            pyxel.quit()
-        return None
-
-    def draw(self) -> None:
-        pyxel.cls(0)
-        if font.is_japanese_available():
-            font.draw_text(8, 8, "Dungeon & Dine: 飢餓のトレジャーハンター", 7)
-            font.draw_text(8, 24, "開発環境の準備ができました（Escで終了）", 6)
-        else:
-            font.draw_text(8, 8, "Dungeon & Dine", 7)
-            font.draw_text(8, 24, "Font not found: assets/fonts/misaki_gothic_2nd.bdf", 8)
-        font.draw_text(8, 40, f"seed: {self.app.run_seed}", 5)
+from game.ui.input import Controls
+from game.ui.sprites import SpriteSheet
+from game.world.tiles import SPRITE_NAMES
 
 
 class App:
     def __init__(self, seed: int | None, display_scale: int, debug: bool) -> None:
+        # データや素材の不備は、ウィンドウを開く前に検出する
+        self.data = data_loader.load_all()
+        sprite_defs = data_loader.parse_sprites(self.data["sprites"])
+        data_loader.require_sprites(sprite_defs, [*SPRITE_NAMES.values(), *PLAYER_SPRITE_NAMES])
+        if not config.RESOURCE_PATH.exists():
+            raise FileNotFoundError(
+                f"{config.RESOURCE_PATH} がありません。"
+                "tools/make_placeholder_sprites.py を実行して作成してください。"
+            )
+
         self.run_seed: int = seed if seed is not None else rng.new_run_seed()
         self.debug = debug
 
@@ -44,11 +37,17 @@ class App:
             display_scale=display_scale,
             quit_key=pyxel.KEY_NONE,
         )
+        pyxel.load(str(config.RESOURCE_PATH))
         font.load()
-        if config.RESOURCE_PATH.exists():
-            pyxel.load(str(config.RESOURCE_PATH))
 
-        self.scene: Scene = BootScene(self)
+        # フェーズ6でタイトル → 拠点 → ダンジョンの流れにする
+        self.scene: Scene = DungeonScene(
+            run_seed=self.run_seed,
+            data=self.data,
+            sprites=SpriteSheet(sprite_defs),
+            controls=Controls(float(self.data["balance"]["input"]["repeat_interval_sec"])),
+            debug=debug,
+        )
 
     def run(self) -> None:
         pyxel.run(self.update, self.draw)

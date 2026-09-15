@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Mapping
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -22,12 +24,24 @@ REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
     "sprites.json": ("version", "sprites"),
     "palettes.json": ("version", "palettes"),
     "floors.json": ("version", "areas", "floors"),
-    "balance.json": ("version",),
+    "balance.json": ("version", "mapgen", "input"),
 }
 
 
 class DataValidationError(Exception):
     """データファイルの形式が不正なときに送出する。"""
+
+
+@dataclass(frozen=True)
+class SpriteDef:
+    """イメージバンク上の素材の位置。アニメーションのコマは右方向に並べる。"""
+
+    u: int
+    v: int
+    w: int = config.TILE_SIZE
+    h: int = config.TILE_SIZE
+    frames: int = 1
+    bank: int = 0
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -51,3 +65,32 @@ def load_all(data_dir: Path = config.DATA_DIR) -> dict[str, dict[str, Any]]:
             raise DataValidationError(f"{filename}: 必須キーがありません: {', '.join(missing)}")
         result[path.stem] = data
     return result
+
+
+def parse_sprites(data: Mapping[str, Any]) -> dict[str, SpriteDef]:
+    """sprites.json の内容を SpriteDef の辞書に変換する。"""
+    result: dict[str, SpriteDef] = {}
+    for name, entry in data["sprites"].items():
+        missing = [key for key in ("u", "v") if key not in entry]
+        if missing:
+            raise DataValidationError(
+                f"sprites.json: {name}: 必須キーがありません: {', '.join(missing)}"
+            )
+        sprite = SpriteDef(
+            u=int(entry["u"]),
+            v=int(entry["v"]),
+            w=int(entry.get("w", config.TILE_SIZE)),
+            h=int(entry.get("h", config.TILE_SIZE)),
+            frames=int(entry.get("frames", 1)),
+            bank=int(entry.get("bank", data.get("image_bank", 0))),
+        )
+        if sprite.frames < 1:
+            raise DataValidationError(f"sprites.json: {name}: frames は1以上にしてください")
+        result[name] = sprite
+    return result
+
+
+def require_sprites(defs: Mapping[str, SpriteDef], names: Iterable[str]) -> None:
+    missing = sorted(set(names) - defs.keys())
+    if missing:
+        raise DataValidationError(f"sprites.json: 素材が定義されていません: {', '.join(missing)}")
