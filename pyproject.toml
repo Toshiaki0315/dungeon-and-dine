@@ -1,0 +1,21 @@
+[project]
+name = "dungeon-and-dine"
+version = "0.1.0"
+description = "Dungeon & Dine: 飢餓のトレジャーハンター（仮）"
+requires-python = ">=3.11"
+dependencies = ["pyxel>=2.0,<3"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "ANN"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["ANN"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

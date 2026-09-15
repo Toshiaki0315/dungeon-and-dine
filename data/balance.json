@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "map": {
+    "width": 64,
+    "height": 48,
+    "rooms_min": 4,
+    "rooms_max": 9
+  },
+  "player": {
+    "level": 1,
+    "hp": 30,
+    "mp": 10,
+    "atk": 5,
+    "def": 2,
+    "hit": 90,
+    "evade": 5,
+    "satiety": 100
+  },
+  "input": {
+    "repeat_interval_sec": 0.15
+  }
+}

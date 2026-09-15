@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# 環境変数・秘密情報
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+secrets/
+
+# Claude Code の個人設定（許可設定などを含むため共有しない）
+.claude/settings.local.json
+
+# 権利確認が済むまで公開しない素材（各自ローカルに配置する）
+docs/cooking_cutin_concept.jpg
+assets/fonts/*
+!assets/fonts/README.md
+
+# ビルド成果物（配布物は GitHub Releases などで公開する）
+build/
+dist/
+*.pyxapp
+
+# OS / エディタ
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ローカルのセーブデータ（通常は pyxel.user_data_dir 配下に保存される）
+save/

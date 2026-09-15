@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "areas": [
+    {
+      "id": "moss",
+      "name": "苔むす洞窟",
+      "floors": [
+        1,
+        5
+      ]
+    },
+    {
+      "id": "catacomb",
+      "name": "骸骨の地下墓地",
+      "floors": [
+        6,
+        10
+      ]
+    },
+    {
+      "id": "mine",
+      "name": "灼熱の坑道",
+      "floors": [
+        11,
+        15
+      ]
+    },
+    {
+      "id": "abyss",
+      "name": "影の深淵",
+      "floors": [
+        16,
+        19
+      ]
+    },
+    {
+      "id": "bottom",
+      "name": "奈落の底",
+      "floors": [
+        20,
+        20
+      ]
+    }
+  ],
+  "floors": []
+}
