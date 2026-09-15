@@ -38,6 +38,11 @@ def text_width(s: str) -> int:
     return len(s) * pyxel.FONT_WIDTH
 
 
+def draw_text_centered(y: int, s: str, col: int) -> None:
+    """画面の横中央に文字列を描画する。"""
+    draw_text((config.SCREEN_WIDTH - text_width(s)) // 2, y, s, col)
+
+
 def draw_text(x: int, y: int, s: str, col: int) -> None:
     """文字列を描画する。"""
     if _font is not None:

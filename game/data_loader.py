@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import json
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar, get_type_hints
 
 from game import config
 
@@ -24,11 +24,20 @@ REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
     "sprites.json": ("version", "sprites"),
     "palettes.json": ("version", "palettes"),
     "floors.json": ("version", "areas", "floors"),
-    "balance.json": ("version", "mapgen", "input"),
+    "balance.json": (
+        "version",
+        "mapgen",
+        "player",
+        "survival",
+        "progression",
+        "fov",
+        "inventory",
+        "input",
+    ),
 }
 
 
-class DataValidationError(Exception):
+class DataValidationError(ValueError):
     """データファイルの形式が不正なときに送出する。"""
 
 
@@ -42,6 +51,19 @@ class SpriteDef:
     h: int = config.TILE_SIZE
     frames: int = 1
     bank: int = 0
+
+
+T = TypeVar("T")
+
+
+def dataclass_from_dict(cls: type[T], data: Mapping[str, Any], section: str) -> T:
+    """dataclass のフィールド名と型に従って、JSON の辞書から値を読み込む。"""
+    hints = get_type_hints(cls)
+    names = [f.name for f in fields(cls)]  # type: ignore[arg-type]
+    missing = [name for name in names if name not in data]
+    if missing:
+        raise DataValidationError(f"{section}: 必須キーがありません: {', '.join(missing)}")
+    return cls(**{name: hints[name](data[name]) for name in names})
 
 
 def load_json(path: Path) -> dict[str, Any]:

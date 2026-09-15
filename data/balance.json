@@ -17,10 +17,32 @@
     "hp": 30,
     "mp": 10,
     "atk": 5,
-    "def": 2,
+    "defense": 2,
     "hit": 90,
     "evade": 5,
     "satiety": 100
+  },
+  "survival": {
+    "satiety_decay_interval": 10,
+    "hunger_warning_threshold": 20,
+    "starvation_damage": 1,
+    "hp_regen_interval": 5,
+    "hp_regen_amount": 1,
+    "mp_regen_interval": 10,
+    "mp_regen_amount": 1,
+    "descend_mp_recover_ratio": 0.2
+  },
+  "progression": {
+    "exp_base": 10,
+    "exp_exponent": 1.5,
+    "max_level": 30
+  },
+  "fov": {
+    "corridor_adjacent": 1,
+    "corridor_forward": 4
+  },
+  "inventory": {
+    "capacity": 20
   },
   "input": {
     "repeat_interval_sec": 0.15

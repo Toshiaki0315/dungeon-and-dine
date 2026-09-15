@@ -7,9 +7,10 @@ from __future__ import annotations
 
 import random
 from collections.abc import Iterator, Mapping
-from dataclasses import dataclass, fields
+from dataclasses import dataclass
 from typing import Any
 
+from game.data_loader import dataclass_from_dict
 from game.world.floor import Floor, Rect
 from game.world.tiles import Tile
 
@@ -35,10 +36,7 @@ class MapGenParams:
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> MapGenParams:
-        missing = [f.name for f in fields(cls) if f.name not in data]
-        if missing:
-            raise ValueError(f"mapgen: 必須キーがありません: {', '.join(missing)}")
-        return cls(**{f.name: int(data[f.name]) for f in fields(cls)})
+        return dataclass_from_dict(cls, data, "mapgen")
 
     def validate(self) -> None:
         if not 2 <= self.rooms_min <= self.rooms_max:

@@ -31,6 +31,8 @@
 - `game/data_loader.py` — `data/*.json` の読み込みと必須キー検証
 - `game/scenes/` — タイトル、拠点、ダンジョン、ゲームオーバー、エンディング
 - `game/world/` `game/entities/` `game/systems/` — **ロジック層（pyxel を import しない）**
+  - `game/systems/game_state.py` — ラン中の状態とターン進行の入口。ロジックのテストはここを操作する
+- `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う
 - `game/ui/` — 描画・入力（文字描画は必ず `ui/font.py` の `draw_text` 経由）
 - `data/` — 敵・アイテム・レシピ・バランス値などの JSON
 - `assets/` — フォント、`resources.pyxres`、料理カットイン背景

@@ -55,6 +55,17 @@ class Controls:
     def triggered(self, action: str) -> bool:
         return any(pyxel.btnp(key) for key in self._bindings[action])
 
+    def triggered_repeat(self, action: str) -> bool:
+        """押した瞬間と、押しっぱなしの間の一定間隔で True（メニューのカーソル移動用）。"""
+        frames = self._repeat_frames
+        return any(pyxel.btnp(key, hold=frames, repeat=frames) for key in self._bindings[action])
+
+    def clicked(self) -> tuple[int, int] | None:
+        """左クリックした瞬間の画面座標。"""
+        if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
+            return (pyxel.mouse_x, pyxel.mouse_y)
+        return None
+
     def direction_command(self) -> MoveCommand | TurnCommand | None:
         """方向入力を移動（または Ctrl / RB で向きだけ変える）コマンドに変換する。
 

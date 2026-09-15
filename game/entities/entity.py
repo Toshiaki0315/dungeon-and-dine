@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from game.systems.turn import ACTION_COST, NORMAL_SPEED
 from game.world.direction import Direction
 from game.world.floor import Floor
 
@@ -16,6 +17,8 @@ class Entity:
     x: int
     y: int
     facing: Direction = Direction.DOWN
+    speed: int = NORMAL_SPEED
+    energy: int = ACTION_COST  # 生成直後から行動できる
 
     @property
     def pos(self) -> tuple[int, int]:
