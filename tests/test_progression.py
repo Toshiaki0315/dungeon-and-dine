@@ -4,15 +4,19 @@ import pytest
 
 from game import data_loader
 from game.entities.player import Player, PlayerParams
+from game.systems.catalog import Catalog
 from game.systems.progression import (
     ProgressionParams,
     SurvivalParams,
     apply_turn_end,
     exp_to_next_level,
+    gain_exp,
     recover_mp_on_descend,
 )
 
-BALANCE = data_loader.load_all()["balance"]
+DATA = data_loader.load_all()
+BALANCE = DATA["balance"]
+SKILLS = Catalog.from_data(DATA).skills
 SURVIVAL = SurvivalParams.from_dict(BALANCE["survival"])
 PROGRESSION = ProgressionParams.from_dict(BALANCE["progression"])
 PLAYER = PlayerParams.from_dict(BALANCE["player"])
@@ -25,6 +29,41 @@ def new_player(**changes):
 @pytest.mark.parametrize(("level", "expected"), [(1, 10), (4, 80), (9, 270)])
 def test_exp_to_next_level(level, expected):
     assert exp_to_next_level(level, PROGRESSION) == expected
+
+
+def test_gain_exp_levels_up_and_raises_stats():
+    player = new_player()
+    messages = gain_exp(player, exp_to_next_level(1, PROGRESSION), PROGRESSION, SKILLS)
+    assert player.level == 2
+    assert player.exp == 0
+    assert player.max_hp == PLAYER.hp + PROGRESSION.hp_per_level
+    assert player.max_mp == PLAYER.mp + PROGRESSION.mp_per_level
+    assert player.atk == PLAYER.atk + PROGRESSION.atk_per_level
+    assert player.defense == PLAYER.defense  # 偶数レベルでは防御は上がらない
+    assert any("レベル2" in m for m in messages)
+
+
+def test_gain_exp_can_level_up_multiple_times_and_learn_skills():
+    player = new_player()
+    total = exp_to_next_level(1, PROGRESSION) + exp_to_next_level(2, PROGRESSION) + 1
+    messages = gain_exp(player, total, PROGRESSION, SKILLS)
+    assert player.level == 3
+    assert player.exp == 1
+    assert player.defense == PLAYER.defense + PROGRESSION.def_per_odd_level
+    assert "power_strike" in player.skills
+    assert any("強撃" in m for m in messages)
+
+
+def test_level_is_capped():
+    player = new_player(level=PROGRESSION.max_level)
+    gain_exp(player, 10**9, PROGRESSION, SKILLS)
+    assert player.level == PROGRESSION.max_level
+
+
+def test_poison_stops_hp_regeneration():
+    player = new_player(hp=10)
+    run_turns(player, 1, SURVIVAL.hp_regen_interval, can_regen_hp=False)
+    assert player.hp == 10
 
 
 def run_turns(player, start, count, **kwargs):

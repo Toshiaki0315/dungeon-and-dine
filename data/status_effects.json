@@ -1,4 +1,20 @@
 {
   "version": 1,
-  "status_effects": []
+  "status_effects": [
+    {"id": "poison", "name": "毒", "kind": "ailment", "duration": 10, "value": 1},
+    {"id": "confusion", "name": "混乱", "kind": "ailment", "duration": 8},
+    {"id": "sleep", "name": "睡眠", "kind": "ailment", "duration": 5},
+    {"id": "slow", "name": "鈍足", "kind": "ailment", "duration": 10, "value": 50},
+    {"id": "blind", "name": "盲目", "kind": "ailment", "duration": 10},
+    {"id": "max_hp_down", "name": "最大HP減少", "kind": "ailment", "duration": null, "value": 3},
+    {"id": "mana_drain", "name": "魔力枯渇", "kind": "ailment", "duration": 10, "value": 1},
+    {"id": "atk_up", "name": "攻撃力UP", "kind": "buff", "duration": 50, "value": 3},
+    {"id": "def_up", "name": "防御力UP", "kind": "buff", "duration": 50, "value": 3},
+    {"id": "haste", "name": "倍速", "kind": "buff", "duration": 20, "value": 200},
+    {"id": "fire_resist", "name": "炎耐性", "kind": "buff", "duration": 100},
+    {"id": "poison_resist", "name": "毒耐性", "kind": "buff", "duration": 100},
+    {"id": "status_resist", "name": "状態異常耐性", "kind": "buff", "duration": 100},
+    {"id": "sight_up", "name": "視界拡張", "kind": "buff", "duration": 100, "value": 1},
+    {"id": "stealth", "name": "忍び足", "kind": "buff", "duration": 20}
+  ]
 }

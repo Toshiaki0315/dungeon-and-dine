@@ -25,8 +25,14 @@ def test_missing_required_key_raises(tmp_path):
 
 
 def test_sprites_json_defines_all_required_sprites():
-    defs = data_loader.parse_sprites(data_loader.load_all()["sprites"])
-    data_loader.require_sprites(defs, [*SPRITE_NAMES.values(), *PLAYER_SPRITE_NAMES])
+    from game.systems.catalog import Catalog
+
+    data = data_loader.load_all()
+    defs = data_loader.parse_sprites(data["sprites"])
+    catalog = Catalog.from_data(data)
+    data_loader.require_sprites(
+        defs, [*SPRITE_NAMES.values(), *PLAYER_SPRITE_NAMES, *catalog.sprite_names()]
+    )
 
 
 def test_parse_sprites_applies_defaults_and_values():

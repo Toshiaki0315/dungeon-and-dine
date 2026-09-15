@@ -35,14 +35,51 @@
   "progression": {
     "exp_base": 10,
     "exp_exponent": 1.5,
-    "max_level": 30
+    "max_level": 30,
+    "hp_per_level": 5,
+    "mp_per_level": 2,
+    "atk_per_level": 1,
+    "def_per_odd_level": 1
+  },
+  "combat": {
+    "hit_min": 5,
+    "hit_max": 95,
+    "damage_rand_min": 0.9,
+    "damage_rand_max": 1.1,
+    "def_factor": 0.5,
+    "crit_rate": 5,
+    "crit_multiplier": 1.5,
+    "throw_damage": 2,
+    "throw_range": 5
+  },
+  "spawn": {
+    "monsters_min": 4,
+    "monsters_max": 8,
+    "items_min": 8,
+    "items_max": 12,
+    "traps_min": 3,
+    "traps_max": 6,
+    "gold_min": 10,
+    "gold_max": 50,
+    "gold_per_floor_ratio": 0.1,
+    "respawn_interval": 50,
+    "monster_gold_drop_chance": 10
+  },
+  "ai": {
+    "erratic_move_chance": 50,
+    "flee_hp_ratio": 0.3,
+    "path_max_nodes": 400
+  },
+  "traps": {
+    "search_chance": 10
   },
   "fov": {
     "corridor_adjacent": 1,
     "corridor_forward": 4
   },
   "inventory": {
-    "capacity": 20
+    "capacity": 20,
+    "stack_max": 99
   },
   "input": {
     "repeat_interval_sec": 0.15

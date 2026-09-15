@@ -1,4 +1,19 @@
 {
   "version": 1,
-  "skills": []
+  "skills": [
+    {"id": "butcher", "name": "解体術", "level": 1, "mp": 3, "type": "attack", "area": "front", "multiplier": 0.8, "guaranteed_drop": true,
+     "description": "前方1マスを攻撃する（ダメージ×0.8）。倒すと食材が必ず落ちる。"},
+    {"id": "power_strike", "name": "強撃", "level": 3, "mp": 4, "type": "attack", "area": "front", "multiplier": 1.8,
+     "description": "前方1マスを強く攻撃する（ダメージ×1.8）。"},
+    {"id": "sweep", "name": "薙ぎ払い", "level": 6, "mp": 6, "type": "attack", "area": "around", "multiplier": 1.0,
+     "description": "周囲8マスすべてを攻撃する（ダメージ×1.0）。"},
+    {"id": "appraise", "name": "目利き", "level": 9, "mp": 8, "type": "appraise",
+     "description": "未鑑定の装備1つについて、呪いの有無だけを見抜く。"},
+    {"id": "stealth", "name": "忍び足", "level": 12, "mp": 8, "type": "stealth", "duration": 20,
+     "description": "20ターンの間、徘徊中の敵に気づかれない。"},
+    {"id": "kindle", "name": "火起こし", "level": 15, "mp": 12, "type": "campfire", "duration": 30,
+     "description": "向いている方向の床に焚き火を作る（30ターンで消える。1階につき1回）。"},
+    {"id": "reckless_blow", "name": "捨て身の一撃", "level": 20, "mp": 15, "type": "attack", "area": "front", "multiplier": 3.0, "self_damage_ratio": 0.1,
+     "description": "前方1マスを全力で攻撃する（ダメージ×3.0）。自分も最大HPの10%のダメージを受ける。"}
+  ]
 }

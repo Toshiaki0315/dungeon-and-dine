@@ -5,8 +5,9 @@ pyxel を import しないこと。
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+from game.systems.status import StatusEffects
 from game.systems.turn import ACTION_COST, NORMAL_SPEED
 from game.world.direction import Direction
 from game.world.floor import Floor
@@ -19,6 +20,7 @@ class Entity:
     facing: Direction = Direction.DOWN
     speed: int = NORMAL_SPEED
     energy: int = ACTION_COST  # 生成直後から行動できる
+    statuses: StatusEffects = field(default_factory=StatusEffects)
 
     @property
     def pos(self) -> tuple[int, int]:

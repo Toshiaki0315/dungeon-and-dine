@@ -1,4 +1,12 @@
 {
   "version": 1,
-  "traps": []
+  "traps": [
+    {"id": "pit", "name": "落とし穴", "sprite": "trap_pit", "effect": "pit", "damage": 5, "spawn_weight": 10},
+    {"id": "poison_arrow", "name": "毒矢の罠", "sprite": "trap_poison_arrow", "effect": "damage_status", "damage": 3, "status": "poison", "spawn_weight": 10},
+    {"id": "sleep_gas", "name": "睡眠ガスの罠", "sprite": "trap_sleep_gas", "effect": "status", "status": "sleep", "spawn_weight": 8},
+    {"id": "warp", "name": "ワープの罠", "sprite": "trap_warp", "effect": "warp", "spawn_weight": 8},
+    {"id": "hunger", "name": "空腹の罠", "sprite": "trap_hunger", "effect": "satiety", "value": -20, "spawn_weight": 8},
+    {"id": "rust", "name": "錆びの罠", "sprite": "trap_rust", "effect": "rust", "value": -1, "spawn_weight": 6},
+    {"id": "alarm", "name": "警報の罠", "sprite": "trap_alarm", "effect": "alarm", "spawn_weight": 6}
+  ]
 }

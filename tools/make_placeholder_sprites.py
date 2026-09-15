@@ -67,7 +67,7 @@ STAIRS_DOWN: Pixels = [
 ]
 
 # --- レオ（茶色の髪、緑のスカーフ、革の鎧） ---
-LEO_DOWN: list[Pixels] = [
+LEO_DOWN: Pixels = (
     [
         "00444400",
         "04ffff40",
@@ -78,18 +78,8 @@ LEO_DOWN: list[Pixels] = [
         "00500500",
         "00500500",
     ],
-    [
-        "00444400",
-        "04ffff40",
-        "0f1ff1f0",
-        "00bbbb00",
-        "0f9449f0",
-        "00944900",
-        "00500500",
-        "05000050",
-    ],
-]
-LEO_UP: list[Pixels] = [
+)
+LEO_UP: Pixels = (
     [
         "00444400",
         "04444440",
@@ -100,55 +90,424 @@ LEO_UP: list[Pixels] = [
         "00500500",
         "00500500",
     ],
+)
+LEO_RIGHT: Pixels = (
     [
         "00444400",
-        "04444440",
-        "04444440",
+        "0444fff0",
+        "0444f1f0",
         "00bbbb00",
-        "0f9999f0",
+        "00949f00",
+        "00944900",
+        "00500500",
+        "00500500",
+    ],
+)
+
+# --- 敵・宝箱のテンプレート（B=体、A=目や模様、D=影や脚、"."=透過） ---
+TEMPLATES: dict[str, list[str]] = {
+    "blob": [
+        "........",
+        "...BB...",
+        "..BBBB..",
+        ".BBBBBB.",
+        ".BABBAB.",
+        ".BBBBBB.",
+        "BBBBBBBB",
+        ".DDDDDD.",
+    ],
+    "beast": [
+        "........",
+        "........",
+        ".BB.....",
+        "BABBBBB.",
+        "BBBBBBBB",
+        ".BBBBBBD",
+        ".D.D.D..",
+        "........",
+    ],
+    "flyer": [
+        "........",
+        "B......B",
+        "BB.BB.BB",
+        "BBBAABBB",
+        ".BBBBBB.",
+        "..B..B..",
+        "........",
+        "........",
+    ],
+    "mushroom": [
+        "..BBBB..",
+        ".BABBAB.",
+        "BBBBBBBB",
+        "...DD...",
+        "..DAAD..",
+        "..DDDD..",
+        "..D..D..",
+        "........",
+    ],
+    "humanoid": [
+        "..BBBB..",
+        "..ABBA..",
+        "..BBBB..",
+        "...BB...",
+        ".BBBBBB.",
+        "...BB...",
+        "..B..B..",
+        "..B..B..",
+    ],
+    "serpent": [
+        "........",
+        ".....BB.",
+        "....BABB",
+        ".BB..BB.",
+        "B..B.B..",
+        "B...BB..",
+        ".BBB....",
+        "........",
+    ],
+    "centipede": [
+        "........",
+        "........",
+        "AB.B.B..",
+        "BBBBBBBB",
+        "BBBBBBBB",
+        ".D.D.D.D",
+        "D.D.D.D.",
+        "........",
+    ],
+    "ghost": [
+        "..BBBB..",
+        ".BBBBBB.",
+        ".BABBAB.",
+        ".BBBBBB.",
+        "BBBBBBBB",
+        "BBBBBBBB",
+        "B.BB.BB.",
+        "........",
+    ],
+    "golem": [
+        ".BBBBBB.",
+        ".BABBAB.",
+        ".BBBBBB.",
+        "BBBBBBBB",
+        "BBDBBDBB",
+        "BBBBBBBB",
+        ".BB..BB.",
+        ".BB..BB.",
+    ],
+    "mimic": [
+        "........",
+        ".BBBBBB.",
+        "BAAAAAAB",
+        "BDDDDDDB",
+        "BDDDDDDB",
+        "BAAAAAAB",
+        "BBBBBBBB",
+        ".D....D.",
+    ],
+    "chest_closed": [
+        "........",
+        ".BBBBBB.",
+        "BBBBBBBB",
+        "DDDAADDD",
+        "BBBAABBB",
+        "BBBBBBBB",
+        "BBBBBBBB",
+        "........",
+    ],
+    "chest_open": [
+        ".BBBBBB.",
+        "BDDDDDDB",
+        "BDDDDDDB",
+        "DDDDDDDD",
+        "BBBAABBB",
+        "BBBBBBBB",
+        "BBBBBBBB",
+        "........",
+    ],
+    "leaf": [
+        "........",
+        ".....DD.",
+        "....BBBD",
+        "...BBBD.",
+        "..BBBD..",
+        ".DBBD...",
+        ".ADD....",
+        "A.......",
+    ],
+}
+
+# 敵ID → (テンプレート, 体, 目や模様, 影)。同じ階に出る敵どうしは色か形で見分けられるようにする。
+MONSTERS: dict[str, tuple[str, int, int, int]] = {
+    "slime": ("blob", 11, 1, 3),
+    "giant_rat": ("beast", 13, 8, 5),
+    "cave_bat": ("flyer", 2, 8, 1),
+    "mushroom_man": ("mushroom", 8, 7, 15),
+    "skeleton": ("humanoid", 7, 1, 13),
+    "serpent": ("serpent", 3, 10, 1),
+    "fire_lizard": ("beast", 9, 10, 8),
+    "mimic": ("mimic", 4, 7, 1),
+    "armored_centipede": ("centipede", 5, 8, 13),
+    "rock_golem": ("golem", 13, 10, 5),
+    "shadow_wraith": ("ghost", 2, 8, 1),
+    "labyrinth_hound": ("beast", 4, 8, 2),
+}
+
+# --- アイテム・武器 ---
+ITEMS: dict[str, Pixels] = {
+    "item_ration": [
+        "00000000",
+        "00000000",
         "00999900",
-        "00500500",
-        "05000050",
+        "09ffff90",
+        "9ffffff9",
+        "94444449",
+        "04444440",
+        "00000000",
     ],
-]
-LEO_RIGHT: list[Pixels] = [
-    [
+    "item_stove": [
+        "00000000",
+        "00080800",
+        "00898980",
+        "0dddddd0",
+        "0d1111d0",
+        "0dddddd0",
+        "0d0000d0",
+        "00000000",
+    ],
+    "item_loupe": [
+        "00000000",
+        "00ddd000",
+        "0d666d00",
+        "0d666d00",
+        "0d666d00",
+        "00ddd400",
+        "00000440",
+        "00000044",
+    ],
+    "item_scroll": [
+        "00000000",
+        "04444440",
+        "00ffff00",
+        "00f11f00",
+        "00ffff00",
+        "00f11f00",
+        "04444440",
+        "00000000",
+    ],
+    "item_holy_water": [
+        "00044000",
+        "00066000",
+        "00066000",
+        "06cccc60",
+        "6cc7ccc6",
+        "6cccccc6",
+        "06cccc60",
+        "00666600",
+    ],
+    "item_arrow": [
+        "00000000",
+        "00000770",
+        "00000470",
+        "00004000",
+        "00040000",
+        "00400000",
+        "07400000",
+        "07000000",
+    ],
+    "item_memo": [
+        "00000000",
+        "0ffffff0",
+        "0f1111f0",
+        "0ffffff0",
+        "0f111ff0",
+        "0ffffff0",
+        "0f11fff0",
+        "0ffffff0",
+    ],
+    "item_gold": [
+        "00000000",
+        "00000000",
+        "00aaaa00",
+        "0a9aa9a0",
+        "00aaaa00",
+        "0a9aa9a0",
+        "00aaaa00",
+        "00000000",
+    ],
+    "weapon_knife": [
+        "00000000",
+        "00000070",
+        "00000760",
+        "00007600",
+        "00076000",
+        "00440000",
+        "04400000",
+        "00000000",
+    ],
+    "weapon_spear": [
+        "00000077",
+        "00000076",
+        "00000440",
+        "00004400",
+        "00044000",
+        "00440000",
+        "04400000",
+        "44000000",
+    ],
+    "weapon_whip": [
+        "00000000",
         "00444400",
-        "0444fff0",
-        "0444f1f0",
-        "00bbbb00",
-        "00949f00",
-        "00944900",
-        "00500500",
-        "00500500",
+        "04000040",
+        "00000040",
+        "00004400",
+        "00040000",
+        "00400000",
+        "0dd00000",
     ],
-    [
-        "00444400",
-        "0444fff0",
-        "0444f1f0",
-        "00bbbb00",
-        "00949f00",
-        "00944900",
-        "00500500",
-        "05000050",
+    "weapon_bow": [
+        "00440000",
+        "00047000",
+        "00004700",
+        "00004070",
+        "00004700",
+        "00047000",
+        "00440000",
+        "00000000",
     ],
-]
+    "weapon_katana": [
+        "00000007",
+        "00000076",
+        "00000760",
+        "00007600",
+        "00076000",
+        "000a0000",
+        "00a10000",
+        "01000000",
+    ],
+}
+LEAVES: dict[str, tuple[int, int, int]] = {
+    "item_herb": (11, 4, 3),
+    "item_mana_herb": (12, 4, 5),
+    "item_antidote": (14, 4, 2),
+}
+
+# --- 罠（発見後に床の上へ重ねて描く） ---
+TRAPS: dict[str, Pixels] = {
+    "trap_pit": [
+        "00000000",
+        "00dddd00",
+        "0d5555d0",
+        "0d5555d0",
+        "0d5555d0",
+        "0d5555d0",
+        "00dddd00",
+        "00000000",
+    ],
+    "trap_poison_arrow": [
+        "00000000",
+        "0000e000",
+        "000eee00",
+        "0000e000",
+        "0000e000",
+        "0000e000",
+        "000e0e00",
+        "00000000",
+    ],
+    "trap_sleep_gas": [
+        "00000000",
+        "00066000",
+        "06666600",
+        "66666660",
+        "06666600",
+        "00000770",
+        "00000070",
+        "00000770",
+    ],
+    "trap_warp": [
+        "00000000",
+        "00cccc00",
+        "0c0000c0",
+        "0c0cc0c0",
+        "0c0c00c0",
+        "0c0ccc00",
+        "00c00000",
+        "00000000",
+    ],
+    "trap_hunger": [
+        "00000000",
+        "00000000",
+        "09999990",
+        "90000009",
+        "09000090",
+        "00999900",
+        "00000000",
+        "00000000",
+    ],
+    "trap_rust": [
+        "00000000",
+        "00940000",
+        "09449000",
+        "00490940",
+        "00004490",
+        "00094900",
+        "00009000",
+        "00000000",
+    ],
+    "trap_alarm": [
+        "00000000",
+        "000aa000",
+        "00aaaa00",
+        "00aaaa00",
+        "00aaaa00",
+        "0aaaaaa0",
+        "000aa000",
+        "00000000",
+    ],
+}
+
+
+def paint(template: str, body: int, accent: int, dark: int) -> Pixels:
+    table = {".": "0", "B": f"{body:x}", "A": f"{accent:x}", "D": f"{dark:x}"}
+    return ["".join(table[c] for c in row) for row in TEMPLATES[template]]
 
 
 def mirror(frames: list[Pixels]) -> list[Pixels]:
     return [[row[::-1] for row in frame] for frame in frames]
 
 
-# 名前 → コマのリスト。行ごとに左から詰めて配置する。
-SHEET: list[dict[str, list[Pixels]]] = [
-    {"floor": [FLOOR], "wall": [WALL], "corridor": [CORRIDOR], "stairs_down": [STAIRS_DOWN]},
-    {
-        "leo_down": LEO_DOWN,
-        "leo_up": LEO_UP,
-        "leo_left": mirror(LEO_RIGHT),
-        "leo_right": LEO_RIGHT,
-    },
-]
+def walk(frame: Pixels) -> list[Pixels]:
+    """待機・歩行の2コマ（2コマ目は足を開く）。"""
+    return [frame, [*frame[:-1], "05000050"]]
+
+
+def bob(frame: Pixels) -> list[Pixels]:
+    """待機の2コマ（2コマ目は1px沈む）。"""
+    return [frame, ["00000000", *frame[:-1]]]
+
+
+def build_sheet() -> list[dict[str, list[Pixels]]]:
+    """名前 → コマのリスト。行ごとに左から詰めて配置する。"""
+    monsters = {name: bob(paint(*spec)) for name, spec in MONSTERS.items()}
+    chests = {
+        "chest_closed": [paint("chest_closed", 4, 10, 1)],
+        "chest_open": [paint("chest_open", 4, 10, 1)],
+    }
+    items = {name: [paint("leaf", *colors)] for name, colors in LEAVES.items()}
+    items.update({name: [pixels] for name, pixels in ITEMS.items()})
+    return [
+        {"floor": [FLOOR], "wall": [WALL], "corridor": [CORRIDOR], "stairs_down": [STAIRS_DOWN]},
+        {
+            "leo_down": walk(LEO_DOWN),
+            "leo_up": walk(LEO_UP),
+            "leo_left": mirror(walk(LEO_RIGHT)),
+            "leo_right": walk(LEO_RIGHT),
+        },
+        {**monsters, **chests},
+        items,
+        {name: [pixels] for name, pixels in TRAPS.items()},
+    ]
 
 
 def main() -> None:
@@ -159,7 +518,7 @@ def main() -> None:
 
     image = pyxel.images[0]
     sprites: dict[str, dict[str, int]] = {}
-    for row, entries in enumerate(SHEET):
+    for row, entries in enumerate(build_sheet()):
         u = 0
         v = row * size
         for name, frames in entries.items():
@@ -168,6 +527,7 @@ def main() -> None:
                 image.set(u + i * size, v, pixels)
             sprites[name] = {"u": u, "v": v, "frames": len(frames)}
             u += len(frames) * size
+        assert u <= image.width, f"{row} 行目が画像の幅を超えています"
 
     config.RESOURCE_PATH.parent.mkdir(parents=True, exist_ok=True)
     pyxel.save(str(config.RESOURCE_PATH))

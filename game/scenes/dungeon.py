@@ -13,16 +13,18 @@ import pyxel
 from game import config
 from game.scenes import Scene
 from game.scenes.game_over import GameOverScene
-from game.systems.game_state import GameState
+from game.systems.game_state import GameState, MoveResult
 from game.systems.progression import exp_to_next_level
 from game.ui import font, hud, minimap
 from game.ui.camera import camera_origin
 from game.ui.command_bar import COMMANDS, CommandBar, command_label, hit_test
 from game.ui.input import Controls, MoveCommand, TurnCommand
-from game.ui.inventory_view import draw_inventory
+from game.ui.inventory_view import ACTION_DROP, ACTION_THROW, InventoryView, ItemRequest
 from game.ui.log import LogHistoryView, draw_recent
 from game.ui.menu import ConfirmDialog
+from game.ui.skill_view import SkillView
 from game.ui.sprites import SpriteSheet
+from game.world.direction import Direction
 from game.world.fov import Visibility
 from game.world.tiles import SPRITE_NAMES, Tile
 
@@ -32,6 +34,7 @@ COLOR_TEXT = 7
 COLOR_SUBTEXT = 13
 COLOR_FRAME = 1
 COLOR_DEBUG = 10
+COLOR_STATUS = 14
 
 # 既知タイル（視界外）を暗く描くためのパレット置き換え（仕様書 2.3.1）
 KNOWN_TILE_PALETTE: dict[int, int] = {
@@ -55,6 +58,7 @@ class Mode(Enum):
     EXPLORE = auto()
     COMMAND_BAR = auto()
     INVENTORY = auto()
+    SKILL_MENU = auto()
     FULL_MAP = auto()
     CONFIRM = auto()
     LOG_HISTORY = auto()
@@ -81,7 +85,10 @@ class DungeonScene:
         self.command_bar = CommandBar()
         self.dialog: ConfirmDialog | None = None
         self.log_history = LogHistoryView(state.log)
+        self.inventory_view = InventoryView(state.inventory)
+        self.skill_view = SkillView()
         self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
+        self._last_floor = state.floor.number
 
     # --- update ---
 
@@ -100,13 +107,22 @@ class DungeonScene:
         elif self.mode == Mode.COMMAND_BAR:
             self._update_command_bar()
         elif self.mode == Mode.INVENTORY:
-            self._close_on("inventory")
+            self._update_inventory()
+        elif self.mode == Mode.SKILL_MENU:
+            self._update_skill_menu()
         elif self.mode == Mode.FULL_MAP:
             self._close_on("map")
         elif self.mode == Mode.CONFIRM:
             self._update_dialog()
         elif self.mode == Mode.LOG_HISTORY and self.log_history.update(self.controls):
             self.mode = Mode.EXPLORE
+
+        # 敵を見つけた・ダメージを受けたなどで、押しっぱなしの連続移動を止める
+        if self.state.consume_interrupt():
+            self.controls.interrupt_repeat()
+        if self.state.floor.number != self._last_floor:
+            self._last_floor = self.state.floor.number
+            self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
 
         if self.state.is_game_over:
             return GameOverScene(
@@ -140,16 +156,26 @@ class DungeonScene:
             elif self.state.player_on_stairs:
                 self._confirm_descend()
             else:
-                self._execute_command("attack")
+                self.state.attack()
             return
         if c.triggered("wait"):
             self.state.wait()
             return
 
         if isinstance(direction_command, MoveCommand):
-            self.state.move_player(direction_command.direction)
+            self._move(direction_command.direction)
         elif isinstance(direction_command, TurnCommand):
             self.state.face(direction_command.direction)
+
+    def _move(self, direction: Direction) -> None:
+        if self.state.move_player(direction) != MoveResult.CONFIRM_TRAP:
+            return
+        self.controls.interrupt_repeat()
+        self.dialog = ConfirmDialog(
+            "罠がある。本当に乗りますか？",
+            lambda: self.state.move_player(direction, confirm_trap=True),
+        )
+        self.mode = Mode.CONFIRM
 
     def _update_command_bar(self) -> None:
         c = self.controls
@@ -173,6 +199,27 @@ class DungeonScene:
         self._execute_command(COMMANDS[index].id)
         return True
 
+    def _update_inventory(self) -> None:
+        result = self.inventory_view.update(self.controls)
+        if result is True:
+            self.mode = Mode.EXPLORE
+        elif isinstance(result, ItemRequest):
+            self.mode = Mode.EXPLORE
+            if result.kind == ACTION_THROW:
+                self.state.throw_item(result.item)
+            elif result.kind == ACTION_DROP:
+                self.state.drop_item(result.item)
+            else:
+                self.state.use_item(result.item)
+
+    def _update_skill_menu(self) -> None:
+        result = self.skill_view.update(self.controls)
+        if result is True:
+            self.mode = Mode.EXPLORE
+        elif isinstance(result, str):
+            self.mode = Mode.EXPLORE
+            self.state.use_skill(result)
+
     def _close_on(self, toggle_action: str) -> None:
         if self.controls.triggered("cancel") or self.controls.triggered(toggle_action):
             self.mode = Mode.EXPLORE
@@ -183,8 +230,14 @@ class DungeonScene:
             self.mode = Mode.EXPLORE
 
     def _execute_command(self, command_id: str) -> None:
-        if command_id == "items":
+        if command_id == "attack":
+            self.state.attack()
+        elif command_id == "items":
+            self.inventory_view.open()
             self.mode = Mode.INVENTORY
+        elif command_id == "skills":
+            self.skill_view.open(self.state.learned_skills())
+            self.mode = Mode.SKILL_MENU
         elif command_id == "map":
             self.mode = Mode.FULL_MAP
         elif command_id == "cook" and not self.state.can_cook:
@@ -199,12 +252,8 @@ class DungeonScene:
         if not self.state.can_descend:
             self.state.log.add("これより下へは、まだ降りられない。")
             return
-        self.dialog = ConfirmDialog("階段を降りますか？", self._descend)
+        self.dialog = ConfirmDialog("階段を降りますか？", self.state.descend)
         self.mode = Mode.CONFIRM
-
-    def _descend(self) -> None:
-        if self.state.descend():
-            self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
 
     # --- draw ---
 
@@ -224,13 +273,16 @@ class DungeonScene:
         exp_next = exp_to_next_level(player.level, self.state.params.progression)
         hud.draw_status_bar(player, self._floor_label(), exp_next)
         self._draw_bottom_panel()
+        self._draw_player_statuses()
         if self.banner_frames > 0:
             self._draw_floor_banner()
         if self.show_debug:
             self._draw_debug()
 
         if self.mode == Mode.INVENTORY:
-            draw_inventory(0, self.state.params.inventory_capacity)
+            self.inventory_view.draw()
+        elif self.mode == Mode.SKILL_MENU:
+            self.skill_view.draw(player.mp)
         elif self.mode == Mode.CONFIRM and self.dialog is not None:
             self.dialog.draw()
 
@@ -243,6 +295,10 @@ class DungeonScene:
         view_w, view_h = config.MAP_VIEW_TILES_W, config.MAP_VIEW_TILES_H
         cam_x, cam_y = camera_origin(player.x, player.y, floor.width, floor.height, view_w, view_h)
         frame = pyxel.frame_count // config.ANIMATION_TICKS
+        traps = {trap.pos: trap for trap in floor.traps if trap.discovered}
+
+        def screen_pos(x: int, y: int) -> tuple[int, int]:
+            return (x - cam_x) * ts, config.MAP_TOP + (y - cam_y) * ts
 
         pyxel.clip(0, config.MAP_TOP, config.SCREEN_WIDTH, config.MAP_VIEW_HEIGHT)
         # 既知タイルを暗いパレットで描いてから、視界内のタイルを通常の色で描く
@@ -259,16 +315,21 @@ class DungeonScene:
                     # 部屋や通路に接していない岩盤は描かず、黒のままにする
                     if tile == Tile.WALL and not floor.is_edge_wall(mx, my):
                         continue
-                    sx, sy = tx * ts, config.MAP_TOP + ty * ts
+                    sx, sy = screen_pos(mx, my)
                     self.sprites.draw(self._tile_sprite(tile), sx, sy, frame, colkey=None)
+                    trap = traps.get((mx, my))
+                    if trap is not None:
+                        self.sprites.draw(trap.definition.sprite, sx, sy)
             pyxel.pal()
 
-        self.sprites.draw(
-            player.sprite_name,
-            (player.x - cam_x) * ts,
-            config.MAP_TOP + (player.y - cam_y) * ts,
-            frame,
-        )
+        # アイテムと敵は視界内のものだけを描く（仕様書 5.4）
+        for floor_item in floor.items:
+            if fog.state(*floor_item.pos) == Visibility.VISIBLE:
+                self.sprites.draw(floor_item.item.definition.sprite, *screen_pos(*floor_item.pos))
+        for monster in floor.monsters:
+            if fog.state(*monster.pos) == Visibility.VISIBLE:
+                self.sprites.draw(monster.sprite_name, *screen_pos(*monster.pos), frame)
+        self.sprites.draw(player.sprite_name, *screen_pos(player.x, player.y), frame)
         pyxel.clip()
 
     def _tile_sprite(self, tile: Tile) -> str:
@@ -284,6 +345,14 @@ class DungeonScene:
             focused=self.mode == Mode.COMMAND_BAR, is_enabled=self._is_command_enabled
         )
         draw_recent(self.state.log, top + 15)
+
+    def _draw_player_statuses(self) -> None:
+        names = self.state.player_status_names()
+        if not names:
+            return
+        text = " ".join(names)
+        pyxel.rect(0, config.MAP_TOP, font.text_width(text) + 4, 10, 0)
+        font.draw_text(2, config.MAP_TOP + 1, text, COLOR_STATUS)
 
     def _draw_floor_banner(self) -> None:
         label = self._floor_label()

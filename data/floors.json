@@ -1,46 +1,32 @@
 {
   "version": 1,
   "areas": [
-    {
-      "id": "moss",
-      "name": "苔むす洞窟",
-      "floors": [
-        1,
-        5
-      ]
-    },
-    {
-      "id": "catacomb",
-      "name": "骸骨の地下墓地",
-      "floors": [
-        6,
-        10
-      ]
-    },
-    {
-      "id": "mine",
-      "name": "灼熱の坑道",
-      "floors": [
-        11,
-        15
-      ]
-    },
-    {
-      "id": "abyss",
-      "name": "影の深淵",
-      "floors": [
-        16,
-        19
-      ]
-    },
-    {
-      "id": "bottom",
-      "name": "奈落の底",
-      "floors": [
-        20,
-        20
-      ]
-    }
+    {"id": "moss", "name": "苔むす洞窟", "floors": [1, 5]},
+    {"id": "catacomb", "name": "骸骨の地下墓地", "floors": [6, 10]},
+    {"id": "mine", "name": "灼熱の坑道", "floors": [11, 15]},
+    {"id": "abyss", "name": "影の深淵", "floors": [16, 19]},
+    {"id": "bottom", "name": "奈落の底", "floors": [20, 20]}
   ],
-  "floors": []
+  "floors": [
+    {"floor": 1, "monsters": {"slime": 10, "giant_rat": 10}},
+    {"floor": 2, "monsters": {"slime": 10, "giant_rat": 10, "cave_bat": 10}},
+    {"floor": 3, "monsters": {"slime": 10, "giant_rat": 10, "cave_bat": 10, "mushroom_man": 10}},
+    {"floor": 4, "monsters": {"slime": 10, "giant_rat": 10, "cave_bat": 10, "mushroom_man": 10}},
+    {"floor": 5, "monsters": {"slime": 10, "giant_rat": 10, "cave_bat": 10, "mushroom_man": 10, "skeleton": 10}},
+    {"floor": 6, "monsters": {"giant_rat": 10, "cave_bat": 10, "mushroom_man": 10, "skeleton": 10, "serpent": 10}},
+    {"floor": 7, "monsters": {"cave_bat": 10, "mushroom_man": 10, "skeleton": 10, "serpent": 10}},
+    {"floor": 8, "monsters": {"cave_bat": 10, "mushroom_man": 10, "skeleton": 10, "serpent": 10, "fire_lizard": 10, "mimic": 3}},
+    {"floor": 9, "monsters": {"mushroom_man": 10, "skeleton": 10, "serpent": 10, "fire_lizard": 10, "mimic": 3}},
+    {"floor": 10, "monsters": {"skeleton": 10, "serpent": 10, "fire_lizard": 10, "mimic": 3, "armored_centipede": 10}},
+    {"floor": 11, "monsters": {"skeleton": 10, "serpent": 10, "fire_lizard": 10, "mimic": 3, "armored_centipede": 10}},
+    {"floor": 12, "monsters": {"skeleton": 10, "serpent": 10, "fire_lizard": 10, "mimic": 3, "armored_centipede": 10, "rock_golem": 10}},
+    {"floor": 13, "monsters": {"serpent": 10, "fire_lizard": 10, "mimic": 3, "armored_centipede": 10, "rock_golem": 10}},
+    {"floor": 14, "monsters": {"fire_lizard": 10, "mimic": 3, "armored_centipede": 10, "rock_golem": 10, "shadow_wraith": 10}},
+    {"floor": 15, "monsters": {"fire_lizard": 10, "mimic": 3, "armored_centipede": 10, "rock_golem": 10, "shadow_wraith": 10}},
+    {"floor": 16, "monsters": {"mimic": 3, "armored_centipede": 10, "rock_golem": 10, "shadow_wraith": 10, "labyrinth_hound": 10}},
+    {"floor": 17, "monsters": {"mimic": 3, "armored_centipede": 10, "rock_golem": 10, "shadow_wraith": 10, "labyrinth_hound": 10}},
+    {"floor": 18, "monsters": {"mimic": 3, "rock_golem": 10, "shadow_wraith": 10, "labyrinth_hound": 10}},
+    {"floor": 19, "monsters": {"mimic": 3, "rock_golem": 10, "shadow_wraith": 10, "labyrinth_hound": 10}},
+    {"floor": 20, "monsters": {"mimic": 3, "shadow_wraith": 10, "labyrinth_hound": 10}}
+  ]
 }

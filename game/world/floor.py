@@ -1,4 +1,4 @@
-"""1階層分の状態（タイル、部屋、開始位置、階段）とエリア定義。仕様書 5章。
+"""1階層分の状態（タイル、部屋、敵、床アイテム、罠）とエリア定義。仕様書 5章。
 
 pyxel を import しないこと。
 """
@@ -6,11 +6,16 @@ pyxel を import しないこと。
 from __future__ import annotations
 
 from collections.abc import Iterator, Mapping, Sequence
-from dataclasses import dataclass
-from typing import Any
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any
 
 from game.world.direction import Direction
 from game.world.tiles import WALKABLE_TILES, Tile
+
+if TYPE_CHECKING:
+    from game.entities.item import FloorItem
+    from game.entities.monster import Monster
+    from game.systems.traps import Trap
 
 
 @dataclass(frozen=True)
@@ -50,6 +55,9 @@ class Floor:
     rooms: list[Rect]
     start: tuple[int, int]
     stairs: tuple[int, int]
+    monsters: list[Monster] = field(default_factory=list)  # 生成順
+    items: list[FloorItem] = field(default_factory=list)
+    traps: list[Trap] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if len(self.tiles) != self.width * self.height:
@@ -68,6 +76,7 @@ class Floor:
         return self.tile_at(x, y) in WALKABLE_TILES
 
     def can_move(self, x: int, y: int, direction: Direction) -> bool:
+        """地形だけを見て、その方向へ1歩進めるか（敵などは考慮しない）。"""
         nx, ny = x + direction.dx, y + direction.dy
         if not self.is_walkable(nx, ny):
             return False
@@ -86,6 +95,15 @@ class Floor:
 
     def room_at(self, x: int, y: int) -> Rect | None:
         return next((room for room in self.rooms if room.contains(x, y)), None)
+
+    def monster_at(self, x: int, y: int) -> Monster | None:
+        return next((m for m in self.monsters if m.x == x and m.y == y), None)
+
+    def item_at(self, x: int, y: int) -> FloorItem | None:
+        return next((i for i in self.items if i.x == x and i.y == y), None)
+
+    def trap_at(self, x: int, y: int) -> Trap | None:
+        return next((t for t in self.traps if t.x == x and t.y == y), None)
 
 
 @dataclass(frozen=True)

@@ -9,6 +9,18 @@ from collections import deque
 
 LOG_CAPACITY = 100
 
+# アイテム名などを黄色で強調するための目印（描画時に取り除く）
+HIGHLIGHT_START = "\x01"
+HIGHLIGHT_END = "\x02"
+
+
+def highlight(text: str) -> str:
+    return f"{HIGHLIGHT_START}{text}{HIGHLIGHT_END}"
+
+
+def strip_markup(text: str) -> str:
+    return text.replace(HIGHLIGHT_START, "").replace(HIGHLIGHT_END, "")
+
 
 class MessageLog:
     def __init__(self, capacity: int = LOG_CAPACITY) -> None:

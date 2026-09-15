@@ -42,6 +42,191 @@
       "u": 48,
       "v": 8,
       "frames": 2
+    },
+    "slime": {
+      "u": 0,
+      "v": 16,
+      "frames": 2
+    },
+    "giant_rat": {
+      "u": 16,
+      "v": 16,
+      "frames": 2
+    },
+    "cave_bat": {
+      "u": 32,
+      "v": 16,
+      "frames": 2
+    },
+    "mushroom_man": {
+      "u": 48,
+      "v": 16,
+      "frames": 2
+    },
+    "skeleton": {
+      "u": 64,
+      "v": 16,
+      "frames": 2
+    },
+    "serpent": {
+      "u": 80,
+      "v": 16,
+      "frames": 2
+    },
+    "fire_lizard": {
+      "u": 96,
+      "v": 16,
+      "frames": 2
+    },
+    "mimic": {
+      "u": 112,
+      "v": 16,
+      "frames": 2
+    },
+    "armored_centipede": {
+      "u": 128,
+      "v": 16,
+      "frames": 2
+    },
+    "rock_golem": {
+      "u": 144,
+      "v": 16,
+      "frames": 2
+    },
+    "shadow_wraith": {
+      "u": 160,
+      "v": 16,
+      "frames": 2
+    },
+    "labyrinth_hound": {
+      "u": 176,
+      "v": 16,
+      "frames": 2
+    },
+    "chest_closed": {
+      "u": 192,
+      "v": 16,
+      "frames": 1
+    },
+    "chest_open": {
+      "u": 200,
+      "v": 16,
+      "frames": 1
+    },
+    "item_herb": {
+      "u": 0,
+      "v": 24,
+      "frames": 1
+    },
+    "item_mana_herb": {
+      "u": 8,
+      "v": 24,
+      "frames": 1
+    },
+    "item_antidote": {
+      "u": 16,
+      "v": 24,
+      "frames": 1
+    },
+    "item_ration": {
+      "u": 24,
+      "v": 24,
+      "frames": 1
+    },
+    "item_stove": {
+      "u": 32,
+      "v": 24,
+      "frames": 1
+    },
+    "item_loupe": {
+      "u": 40,
+      "v": 24,
+      "frames": 1
+    },
+    "item_scroll": {
+      "u": 48,
+      "v": 24,
+      "frames": 1
+    },
+    "item_holy_water": {
+      "u": 56,
+      "v": 24,
+      "frames": 1
+    },
+    "item_arrow": {
+      "u": 64,
+      "v": 24,
+      "frames": 1
+    },
+    "item_memo": {
+      "u": 72,
+      "v": 24,
+      "frames": 1
+    },
+    "item_gold": {
+      "u": 80,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_knife": {
+      "u": 88,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_spear": {
+      "u": 96,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_whip": {
+      "u": 104,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_bow": {
+      "u": 112,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_katana": {
+      "u": 120,
+      "v": 24,
+      "frames": 1
+    },
+    "trap_pit": {
+      "u": 0,
+      "v": 32,
+      "frames": 1
+    },
+    "trap_poison_arrow": {
+      "u": 8,
+      "v": 32,
+      "frames": 1
+    },
+    "trap_sleep_gas": {
+      "u": 16,
+      "v": 32,
+      "frames": 1
+    },
+    "trap_warp": {
+      "u": 24,
+      "v": 32,
+      "frames": 1
+    },
+    "trap_hunger": {
+      "u": 32,
+      "v": 32,
+      "frames": 1
+    },
+    "trap_rust": {
+      "u": 40,
+      "v": 32,
+      "frames": 1
+    },
+    "trap_alarm": {
+      "u": 48,
+      "v": 32,
+      "frames": 1
     }
   }
 }

@@ -21,7 +21,10 @@ class App:
         self.data = data_loader.load_all()
         self.params = GameParams.from_data(self.data)
         sprite_defs = data_loader.parse_sprites(self.data["sprites"])
-        data_loader.require_sprites(sprite_defs, [*SPRITE_NAMES.values(), *PLAYER_SPRITE_NAMES])
+        data_loader.require_sprites(
+            sprite_defs,
+            [*SPRITE_NAMES.values(), *PLAYER_SPRITE_NAMES, *self.params.catalog.sprite_names()],
+        )
         if not config.RESOURCE_PATH.exists():
             raise FileNotFoundError(
                 f"{config.RESOURCE_PATH} がありません。"

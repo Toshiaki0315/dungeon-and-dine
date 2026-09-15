@@ -13,7 +13,7 @@ from game import config
 # ファイル名 → トップレベルに必須のキー。フェーズが進んだら要素単位の検証を追加する。
 REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
     "enemies.json": ("version", "enemies"),
-    "weapons.json": ("version", "weapons"),
+    "weapons.json": ("version", "weapons", "unarmed"),
     "armors.json": ("version", "armors"),
     "items.json": ("version", "items"),
     "ingredients.json": ("version", "ingredients"),
@@ -30,6 +30,10 @@ REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
         "player",
         "survival",
         "progression",
+        "combat",
+        "spawn",
+        "ai",
+        "traps",
         "fov",
         "inventory",
         "input",

@@ -6,11 +6,12 @@ pyxel を import しないこと。
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from game.data_loader import dataclass_from_dict
 from game.entities.entity import Entity
+from game.entities.item import ItemInstance
 from game.world.direction import FACINGS
 
 PLAYER_NAME = "レオ"
@@ -53,6 +54,8 @@ class Player(Entity):
     satiety: int = 0
     max_satiety: int = 0
     satiety_progress: int = 0  # 満腹度が1減るまでの蓄積（% 単位）
+    weapon: ItemInstance | None = None  # 装備の着脱はフェーズ4で実装する
+    skills: list[str] = field(default_factory=list)
 
     @classmethod
     def from_params(cls, params: PlayerParams, x: int = 0, y: int = 0) -> Player:

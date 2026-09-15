@@ -48,6 +48,7 @@ class Controls:
         self._press_order: list[str] = []  # 押された順（最後が最新）
         self._held_direction: Direction | None = None
         self._held_frames = 0
+        self._suppressed: Direction | None = None  # 中断中の方向（離すか変えるまで無効）
 
     def pressed(self, action: str) -> bool:
         return any(pyxel.btn(key) for key in self._bindings[action])
@@ -72,17 +73,25 @@ class Controls:
         押した瞬間に1回、押しっぱなしなら repeat_interval_sec ごとに1回発行する。
         """
         direction = self._current_direction()
+        if direction != self._suppressed:
+            self._suppressed = None
         if direction != self._held_direction:
             self._held_direction = direction
             self._held_frames = 0
         else:
             self._held_frames += 1
 
-        if direction is None or self._held_frames % self._repeat_frames != 0:
+        if direction is None or self._suppressed is not None:
+            return None
+        if self._held_frames % self._repeat_frames != 0:
             return None
         if self.pressed("turn_modifier"):
             return TurnCommand(direction)
         return MoveCommand(direction)
+
+    def interrupt_repeat(self) -> None:
+        """押しっぱなしの連続移動を止める。キーを離すか、別の方向を押すまで再開しない。"""
+        self._suppressed = self._held_direction
 
     def _current_direction(self) -> Direction | None:
         for action in _DIRECTION_ACTIONS:
