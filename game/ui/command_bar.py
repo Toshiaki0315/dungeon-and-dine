@@ -27,6 +27,7 @@ COMMANDS: tuple[CommandDef, ...] = (
     CommandDef("items", "道具"),
     CommandDef("skills", "スキル"),
     CommandDef("cook", "料理"),
+    CommandDef("talk", "話す"),  # 迷宮の行商人（仕様書 12.4）
     CommandDef("equipment", "装備"),
     CommandDef("map", "地図"),
 )

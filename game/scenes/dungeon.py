@@ -43,12 +43,20 @@ from game.ui.inventory_view import (
 )
 from game.ui.log import LogHistoryView, draw_recent
 from game.ui.menu import ConfirmDialog
+from game.ui.merchant_view import MerchantView
 from game.ui.notebook_view import NotebookView
 from game.ui.skill_view import SkillView
 from game.ui.sprites import SpriteSheet
 from game.world.direction import Direction
+from game.world.floor import area_label
 from game.world.fov import Visibility
-from game.world.tiles import CAMPFIRE_SPRITE, SAFE_FLOOR_SPRITE, SPRITE_NAMES, Tile
+from game.world.tiles import (
+    CAMPFIRE_SPRITE,
+    MERCHANT_SPRITE,
+    SAFE_FLOOR_SPRITE,
+    SPRITE_NAMES,
+    Tile,
+)
 
 FLOOR_BANNER_SECONDS = 2
 CURSE_FLASH_FRAMES = config.FPS
@@ -85,6 +93,7 @@ class Mode(Enum):
     EQUIPMENT = auto()
     SKILL_MENU = auto()
     COOKING_CUTIN = auto()  # 食材選択 → 調理演出 → 結果表示（仕様書 9.3）
+    MERCHANT = auto()  # 迷宮の行商人との対話（仕様書 12.4）
     NOTEBOOK = auto()
     FULL_MAP = auto()
     CONFIRM = auto()
@@ -100,6 +109,7 @@ class DungeonScene:
         controls: Controls,
         debug: bool,
         finish_run: Callable[[GameState, bool], Scene],
+        show_ending: Callable[[GameState], Scene] | None = None,
         save_run: Callable[[GameState], None] | None = None,
         cooking_palette: list[int] | None = None,
         cutin_backgrounds: dict[str, pyxel.Image] | None = None,
@@ -110,6 +120,7 @@ class DungeonScene:
         self.controls = controls
         self.debug = debug
         self.finish_run = finish_run
+        self.show_ending = show_ending
         self.save_run = save_run
         self.show_debug = False
 
@@ -124,6 +135,7 @@ class DungeonScene:
             state, state.params.cooking.cutin, cooking_palette or [], cutin_backgrounds
         )
         self.notebook_view = NotebookView(state.catalog, state.notebook)
+        self.merchant_view = MerchantView(state)
         self.audio = audio
         self.effects = EffectLayer()
         # 対象の選択を待っているアイテム（"item"）またはスキル（"skill"）
@@ -158,6 +170,9 @@ class DungeonScene:
             self._update_cutin()
         elif self.mode == Mode.NOTEBOOK and self.notebook_view.update(self.controls):
             self.mode = Mode.EXPLORE
+        elif self.mode == Mode.MERCHANT:
+            if self.merchant_view.update(self.controls):
+                self.mode = Mode.EXPLORE
         elif self.mode == Mode.FULL_MAP:
             self._close_on("map")
         elif self.mode == Mode.CONFIRM:
@@ -179,9 +194,12 @@ class DungeonScene:
             if self.save_run is not None:
                 self.save_run(self.state)  # 階を移ったら中断データを保存する（仕様書 13章）
 
+        if self.state.cleared and not self.state.ending_shown and self.show_ending is not None:
+            # エンディングの階のボスを倒した。挑戦は終わらず、見たあとに続けるか選ぶ
+            self.state.ending_shown = True
+            return self.show_ending(self.state)
         if self.state.run_over:
-            # クリアも生還と同じ扱い（所持品と所持金を持ち帰る）
-            return self.finish_run(self.state, self.state.returned or self.state.cleared)
+            return self.finish_run(self.state, self.state.returned)
         return None
 
     def _handle_event(self, event: GameEvent) -> None:
@@ -387,11 +405,21 @@ class DungeonScene:
                 self.mode = Mode.COOKING_CUTIN
             else:
                 self.state.log.add(self.state.cooking_unavailable_reason())
+        elif command_id == "talk":
+            if self.state.can_talk:
+                self.merchant_view.open()
+                self.mode = Mode.MERCHANT
+            else:
+                self.state.log.add("近くに話せる相手はいない。")
         else:
             self.state.log.add(f"「{command_label(command_id)}」は未実装です。")
 
     def _is_command_enabled(self, command_id: str) -> bool:
-        return command_id != "cook" or self.state.can_cook
+        if command_id == "cook":
+            return self.state.can_cook
+        if command_id == "talk":
+            return self.state.can_talk
+        return True
 
     def _confirm_descend(self) -> None:
         if not self.state.can_descend:
@@ -435,13 +463,16 @@ class DungeonScene:
             self.skill_view.draw(player.mp)
         elif self.mode == Mode.NOTEBOOK:
             self.notebook_view.draw()
+        elif self.mode == Mode.MERCHANT:
+            self.merchant_view.draw()
         elif self.mode == Mode.CONFIRM and self.dialog is not None:
             self.dialog.draw()
         if self.mode == Mode.COOKING_CUTIN:
             self.cutin.draw_overlay()  # ワイプの途中（探索画面側）
 
     def _floor_label(self) -> str:
-        return f"B{self.state.floor.number}F {self.state.area.name}"
+        label = area_label(self.state.params.areas, self.state.floor.number)
+        return f"B{self.state.floor.number}F {label}"
 
     def _draw_map(self) -> None:
         ts = config.TILE_SIZE
@@ -482,6 +513,8 @@ class DungeonScene:
                         self.sprites.draw(trap.definition.sprite, sx, sy)
                     if floor.campfire_at(mx, my) is not None:
                         self.sprites.draw(CAMPFIRE_SPRITE, sx, sy, fire_frame)
+                    if floor.merchant_at(mx, my) is not None:
+                        self.sprites.draw(MERCHANT_SPRITE, sx, sy, frame)
             pyxel.pal()
 
         # アイテム・宝箱・敵は視界内のものだけを描く（仕様書 5.4。ミミックと宝箱を見分けさせない）

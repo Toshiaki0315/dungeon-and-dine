@@ -154,11 +154,13 @@ def test_descend_generates_next_floor():
     assert all(state.fog.state(*cell) == Visibility.VISIBLE for cell in room.cells())
 
 
-def test_cannot_descend_from_last_floor():
+def test_can_keep_descending_past_the_boss_floor():
+    """迷宮に最下層はない。ボス階より下へも潜り続けられる。"""
     state = new_state()
-    state.enter_floor(PARAMS.last_floor)
+    state.enter_floor(PARAMS.boss_interval + 1)
     state.player.x, state.player.y = state.floor.stairs
-    assert not state.descend()
+    assert state.descend() is True
+    assert state.floor.number == PARAMS.boss_interval + 2
 
 
 # --- 戦闘 ---

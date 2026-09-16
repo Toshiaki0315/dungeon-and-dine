@@ -10,7 +10,7 @@ DATA = data_loader.load_all()
 
 def test_catalog_loads_all_definitions():
     catalog = Catalog.from_data(DATA)
-    assert len(catalog.monsters) == 13  # 12種 + B20F のボス
+    assert len(catalog.monsters) == 25  # 通常20種 + 20階ごとのボス5体
     assert {"knife", "spear", "whip", "bow", "katana"} <= set(catalog.items)
     assert len(catalog.traps) == 7
     assert len(catalog.skills) == 7

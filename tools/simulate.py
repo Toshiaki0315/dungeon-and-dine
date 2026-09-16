@@ -342,7 +342,7 @@ def simulate_run(
     while not state.run_over and state.turn < max_turns:
         before = state.floor.number
         player.step()
-        if state.floor.number >= params.last_floor and boss_level is None:
+        if params.is_boss_floor(state.floor.number) and boss_level is None:
             boss_level = state.player.level
         if verbose and state.floor.number != before:
             p = state.player

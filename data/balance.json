@@ -71,7 +71,16 @@
     "gold_max": 50,
     "gold_per_floor_ratio": 0.1,
     "respawn_interval": 50,
-    "monster_gold_drop_chance": 10
+    "monster_gold_drop_chance": 10,
+    "deeper_hp_ratio": 0.35,
+    "deeper_atk_ratio": 0.25,
+    "deeper_defense_ratio": 0.2,
+    "deeper_exp_ratio": 0.6,
+    "merchant_floors": [19, 39, 59, 79, 99],
+    "merchant_chance": 25,
+    "merchant_price_ratio": 1.5,
+    "merchant_uncurse_cost": 300,
+    "merchant_cure_cost": 80
   },
   "ai": {
     "erratic_move_chance": 50,

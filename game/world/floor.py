@@ -62,6 +62,21 @@ class Campfire:
         return (self.x, self.y)
 
 
+@dataclass(eq=False)
+class Merchant:
+    """迷宮の行商人。隣接するか上に立つと話しかけられる（仕様書 12.4）。
+
+    道具の売買・解呪・解毒をまとめて引き受ける。焚き火と同じく、周囲は敵が入れない。
+    """
+
+    x: int
+    y: int
+
+    @property
+    def pos(self) -> tuple[int, int]:
+        return (self.x, self.y)
+
+
 @dataclass
 class Floor:
     number: int
@@ -76,6 +91,7 @@ class Floor:
     chests: list[Chest] = field(default_factory=list)
     traps: list[Trap] = field(default_factory=list)
     campfires: list[Campfire] = field(default_factory=list)
+    merchants: list[Merchant] = field(default_factory=list)
     kindled: bool = False  # この階で「火起こし」を使ったか
 
     def __post_init__(self) -> None:
@@ -130,6 +146,13 @@ class Floor:
     def campfire_at(self, x: int, y: int) -> Campfire | None:
         return next((c for c in self.campfires if c.x == x and c.y == y), None)
 
+    def merchant_at(self, x: int, y: int) -> Merchant | None:
+        return next((m for m in self.merchants if m.x == x and m.y == y), None)
+
+    def merchant_near(self, x: int, y: int) -> Merchant | None:
+        """その場所か隣の8マスにいる行商人（話しかけられる範囲。仕様書 12.4）。"""
+        return next((m for m in self.merchants if chebyshev((x, y), m.pos) <= 1), None)
+
     def in_safe_zone(self, x: int, y: int) -> bool:
         """焚き火のマスか、その周囲8マスか。料理できる範囲とも同じ。"""
         return any(chebyshev((x, y), c.pos) <= SAFE_ZONE_RADIUS for c in self.campfires)
@@ -155,8 +178,36 @@ class Area:
         )
 
 
+def cycle_length(areas: Sequence[Area]) -> int:
+    """エリア定義が覆う階数。これを1周とし、それより下は同じ並びをくり返す。"""
+    return max(area.last_floor for area in areas)
+
+
+def cycle_for_floor(areas: Sequence[Area], floor_number: int) -> int:
+    """その階が何周目か。1周目（B1F〜B20F）は0を返す。"""
+    if floor_number < 1:
+        return 0
+    return (floor_number - 1) // cycle_length(areas)
+
+
+def template_floor(areas: Sequence[Area], floor_number: int) -> int:
+    """その階が、1周目のどの階にあたるか（B21F なら B1F、B40F なら B20F）。"""
+    if floor_number < 1:
+        return floor_number
+    return (floor_number - 1) % cycle_length(areas) + 1
+
+
 def area_for_floor(areas: Sequence[Area], floor_number: int) -> Area:
+    """その階のエリア。1周分の定義を、深いほうへくり返して使う。"""
+    template = template_floor(areas, floor_number)
     for area in areas:
-        if area.first_floor <= floor_number <= area.last_floor:
+        if area.first_floor <= template <= area.last_floor:
             return area
     raise ValueError(f"B{floor_number}F に対応するエリアが floors.json にありません")
+
+
+def area_label(areas: Sequence[Area], floor_number: int) -> str:
+    """画面に出すエリア名。2周目より下は「（深層2）」のように付ける。"""
+    area = area_for_floor(areas, floor_number)
+    cycle = cycle_for_floor(areas, floor_number)
+    return area.name if cycle == 0 else f"{area.name}（深層{cycle + 1}）"

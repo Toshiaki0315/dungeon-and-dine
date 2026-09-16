@@ -157,6 +157,9 @@ class GameParams:
     inventory_capacity: int
     inventory_stack_max: int
     areas: tuple[Area, ...]
+    boss_interval: int  # 何階ごとにボスが出るか（floors.json の "cycle"）
+    ending_floor: int  # ここのボスを倒すとエンディング。これより下へも潜れる
+    bosses: tuple[str, ...]  # ボスの出る順。一周したら先頭に戻り、深層の強化を受ける
 
     @classmethod
     def from_data(cls, data: Mapping[str, Mapping[str, Any]]) -> GameParams:
@@ -185,11 +188,28 @@ class GameParams:
             inventory_capacity=int(balance["inventory"]["capacity"]),
             inventory_stack_max=int(balance["inventory"]["stack_max"]),
             areas=tuple(Area.from_dict(area) for area in data["floors"]["areas"]),
+            boss_interval=int(data["floors"]["cycle"]["boss_interval"]),
+            ending_floor=int(data["floors"]["cycle"]["ending_floor"]),
+            bosses=tuple(str(b) for b in data["floors"]["bosses"]),
         )
 
     @property
-    def last_floor(self) -> int:
+    def cycle_length(self) -> int:
+        """エリア定義が覆う階数。これを1周とし、それより下はくり返す。"""
         return max(area.last_floor for area in self.areas)
+
+    def is_boss_floor(self, floor_number: int) -> bool:
+        """20階ごとにボス階。エンディングの階より下でも出続ける。"""
+        return floor_number > 0 and floor_number % self.boss_interval == 0
+
+    def boss_for_floor(self, floor_number: int) -> str:
+        """その階に出るボスのID。表を使い切ったら先頭へ戻る。"""
+        index = floor_number // self.boss_interval - 1
+        return self.bosses[index % len(self.bosses)]
+
+    def boss_cycle(self, floor_number: int) -> int:
+        """そのボスが何巡目か。1巡目（最初の5体）は0で、強化を受けない。"""
+        return (floor_number // self.boss_interval - 1) // len(self.bosses)
 
 
 class MoveResult(Enum):
@@ -252,7 +272,9 @@ class GameState:
         self.notebook = notebook if notebook is not None else Notebook()  # ランをまたいで残る
         self.interrupted = False  # 連続移動を止めるべき出来事（敵の発見・被ダメージなど）
         self.returned = False  # 帰還の巻物で生還した
-        self.cleared = False  # ボスを倒した
+        self.cleared = False  # エンディングの階のボスを倒した（挑戦は終わらない）
+        self.ending_shown = False  # エンディングを表示済みか（同じ挑戦で二度出さない）
+        self.last_boss_name = ""  # 直前に倒したボスの名前（エンディングの文面に使う）
         self.events: list[GameEvent] = []  # UI で演出する出来事（EFFECT_*）
         self._next_uid_value = 0
         self._visible_monster_ids: set[int] = set()
@@ -277,12 +299,20 @@ class GameState:
 
     @property
     def run_over(self) -> bool:
-        """この挑戦が終わったか（力尽きた、生還した、クリアした）。"""
-        return self.is_game_over or self.returned or self.cleared
+        """この挑戦が終わったか。
+
+        迷宮から出る方法は「力尽きる」か「帰還の巻物を使う」かの2つだけ（仕様書 5.5 / 6.6）。
+        エンディングの階のボスを倒しても挑戦は終わらず、さらに下へ潜り続けられる。
+        """
+        return self.is_game_over or self.returned
 
     @property
     def is_boss_floor(self) -> bool:
-        return self.floor.number >= self.params.last_floor
+        return self.params.is_boss_floor(self.floor.number)
+
+    @property
+    def boss_alive(self) -> bool:
+        return any(m.definition.ai == AI_BOSS for m in self.floor.monsters)
 
     @property
     def uid_counter(self) -> int:
@@ -303,12 +333,19 @@ class GameState:
 
     @property
     def can_descend(self) -> bool:
-        # B20F（ボス階）はフェーズ7で固定レイアウトにし、階段を置かない
-        return self.player_on_stairs and self.floor.number < self.params.last_floor
+        # ボス階にも階段はあるが、ボスを倒すまでは降りられない
+        if self.is_boss_floor and self.boss_alive:
+            return False
+        return self.player_on_stairs
 
     @property
     def can_cook(self) -> bool:
         return self.heat_source() is not None
+
+    @property
+    def can_talk(self) -> bool:
+        """行商人に話しかけられるか（その場か隣の8マス。仕様書 12.4）。"""
+        return self.floor.merchant_near(*self.player.pos) is not None
 
     def visible_monsters(self) -> list[Monster]:
         return [m for m in self.floor.monsters if self.fog.state(*m.pos) == Visibility.VISIBLE]
@@ -483,10 +520,17 @@ class GameState:
 
     def enter_floor(self, number: int) -> None:
         floor_rng = rng_module.floor_rng(self.run_seed, number)
-        if number >= self.params.last_floor:
-            # B20F は固定レイアウトのボス階（仕様書 5.3 / 8.3）
+        if self.params.is_boss_floor(number):
+            # 20階ごとのボス階。固定レイアウトにする（仕様書 5.3 / 8.3）
             self.floor = generate_boss_floor(number, self.params.mapgen)
-            spawn.populate_boss_floor(self.floor, self.catalog, self._next_uid)
+            spawn.populate_boss_floor(
+                self.floor,
+                self.catalog,
+                self._next_uid,
+                self.params.boss_for_floor(number),
+                self.params.spawn,
+                self.params.boss_cycle(number),
+            )
         else:
             self.floor = generate_floor(floor_rng, number, self.params.mapgen)
             spawn.populate_floor(
@@ -792,6 +836,7 @@ class GameState:
             and self.floor.monster_at(x, y) is None
             and self.floor.chest_at(x, y) is None
             and not self.floor.in_safe_zone(x, y)  # 焚き火の周囲には入らない
+            and self.floor.merchant_at(x, y) is None  # 行商人のマスにも入らない
             and (x, y) != self.player.pos
         )
 
@@ -960,9 +1005,13 @@ class GameState:
         if self.player.level > level_before:
             self.emit(EFFECT_LEVEL_UP, self.player.pos)
         if monster.definition.ai == AI_BOSS:
-            self.cleared = True
             self.emit(EFFECT_CLEAR)
-            self.log.add(f"{monster.name}を倒した！ 迷宮の主は崩れ落ちた。")
+            self.last_boss_name = monster.name
+            if self.floor.number >= self.params.ending_floor:
+                self.cleared = True
+                self.log.add(f"{monster.name}を倒した！ 迷宮の主は崩れ落ちた。")
+            else:
+                self.log.add(f"{monster.name}を倒した！ さらに下へ続く道が現れた。")
         if monster.definition.ai == AI_AMBUSH:
             # ミミックは宝箱の中身を落とす
             contents = spawn.chest_contents(
@@ -1279,7 +1328,7 @@ class GameState:
         if definition.effect == TRAP_PIT:
             self.log.add(f"{p.name}は{definition.damage}のダメージを受けた。")
             self._damage_player(definition.damage)
-            if not self.is_game_over and self.floor.number < self.params.last_floor:
+            if not self.is_game_over and not self.is_boss_floor:
                 self._go_down()
                 self.log.add(f"{p.name}は B{self.floor.number}F へ落ちてしまった。")
         elif definition.effect == TRAP_DAMAGE_STATUS:
@@ -1452,4 +1501,5 @@ class GameState:
                 self.catalog,
                 lambda c: self.fog.state(*c) != Visibility.VISIBLE and chebyshev(c, p.pos) > 1,
                 self._next_uid,
+                self.params.spawn,
             )

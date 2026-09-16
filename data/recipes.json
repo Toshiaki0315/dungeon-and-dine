@@ -33,6 +33,18 @@
      "effects": [{"type": "satiety", "value": 80}, {"type": "heal", "value": 60}, {"type": "status", "statuses": ["atk_up"]}]},
     {"id": "labyrinth_stew", "name": "迷宮ごった煮",
      "ingredients": [{"tag": "肉類"}, {"tag": "キノコ類"}, {"id": "rock_salt"}],
-     "effects": [{"type": "satiety", "value": 80}, {"type": "heal", "value": 30}]}
+     "effects": [{"type": "satiety", "value": 80}, {"type": "heal", "value": 30}]},
+    {"id": "silk_noodle", "name": "蜘蛛糸の冷麺",
+     "ingredients": [{"id": "spider_thread"}, {"id": "rock_salt"}],
+     "effects": [{"type": "satiety", "value": 35}, {"type": "heal", "value": 15}]},
+    {"id": "ghoul_confit", "name": "屍肉のコンフィ",
+     "ingredients": [{"id": "ghoul_flesh"}, {"id": "herb"}, {"id": "rock_salt"}],
+     "effects": [{"type": "satiety", "value": 70}, {"type": "heal", "value": 40}, {"type": "cure", "statuses": ["max_hp_down"]}]},
+    {"id": "ember_stew", "name": "燠火の煮込み",
+     "ingredients": [{"id": "ember_core"}, {"tag": "肉類"}],
+     "effects": [{"type": "satiety", "value": 60}, {"type": "heal", "value": 25}, {"type": "status", "statuses": ["fire_resist"]}]},
+    {"id": "scale_tea", "name": "鱗粉茶",
+     "ingredients": [{"id": "moth_scale"}, {"id": "herb"}],
+     "effects": [{"type": "satiety", "value": 20}, {"type": "restore_mp", "value": 25}, {"type": "cure", "statuses": ["blind"]}]}
   ]
 }

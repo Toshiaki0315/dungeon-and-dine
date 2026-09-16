@@ -330,7 +330,22 @@ MONSTERS: dict[str, tuple[str, int, int, int]] = {
     "rock_golem": ("golem", 13, 10, 5),
     "shadow_wraith": ("ghost", 2, 8, 1),
     "labyrinth_hound": ("beast", 4, 8, 2),
+    # 追加分。体の色は、出現する階の床の色と同じにしない（背景に溶けて見えなくなるため）
+    "cave_spider": ("centipede", 1, 7, 0),
+    "bog_slime": ("blob", 12, 1, 5),
+    "ghoul": ("humanoid", 6, 8, 5),
+    "wisp": ("ghost", 10, 7, 9),
+    "stone_beetle": ("centipede", 13, 6, 5),
+    "bone_knight": ("humanoid", 7, 12, 5),
+    "lava_newt": ("beast", 8, 10, 2),
+    "void_moth": ("flyer", 14, 7, 2),
 }
+
+# 迷宮の行商人（仕様書 12.4）。敵と見間違えないよう、明るい緑の人型にする。
+# キー名はゲーム本体の game/world/tiles.py の MERCHANT_SPRITE と合わせること
+# （ツールは本体から import しない決まりのため、ここでは同じ文字列を書く）。
+MERCHANT_SPRITE = "merchant"
+MERCHANT: tuple[str, int, int, int] = ("humanoid", 11, 10, 3)
 
 # --- アイテム・武器 ---
 ITEMS: dict[str, Pixels] = {
@@ -746,9 +761,28 @@ def bob(frame: Pixels) -> list[Pixels]:
     return [frame, ["00000000", *frame[:-1]]]
 
 
+def boss_sheet() -> dict[str, list[Pixels]]:
+    """ボスID → コマのリスト（16×16）。20階ごとのボスを、元の絵の色違いで作る。
+
+    recolor はこのファイルの下の方で定義しているため、モジュールの読み込み時ではなく
+    呼ばれたときに組み立てる。色は、そのボスが出る階の床の色と同じにしない。
+    """
+    recolors: dict[str, dict[str, int]] = {
+        "bone_sovereign": {"8": 7, "2": 13, "a": 8},  # 骸骨王（白い骨、赤い目）
+        "magma_tyrant": {"8": 9, "2": 4, "a": 10},  # 溶岩の暴君（橙と黄）
+        "void_seraph": {"8": 12, "2": 5, "a": 7},  # 虚無の熾天使（淡い青。深淵の床色1を避ける）
+        "labyrinth_maker": {"8": 10, "2": 4, "a": 7},  # 迷宮の造り主（金）
+    }
+    sheet: dict[str, list[Pixels]] = {"devourer": BOSS}
+    for boss_id, mapping in recolors.items():
+        sheet[boss_id] = [recolor(frame, mapping) for frame in BOSS]
+    return sheet
+
+
 def build_sheet() -> list[dict[str, list[Pixels]]]:
     """名前 → コマのリスト。行ごとに左から詰めて配置する。"""
     monsters = {name: bob(paint(*spec)) for name, spec in MONSTERS.items()}
+    monsters[MERCHANT_SPRITE] = bob(paint(*MERCHANT))
     chests = {
         "chest_closed": [paint("chest_closed", 4, 10, 1)],
         "chest_open": [paint("chest_open", 4, 10, 1)],
@@ -785,30 +819,40 @@ def main() -> None:
 
     image = pyxel.images[0]
     sprites: dict[str, dict[str, int]] = {}
-    for row, entries in enumerate(build_sheet()):
+    row = 0
+    for entries in build_sheet():
         u = 0
         v = row * size
         for name, frames in entries.items():
+            width = len(frames) * size
+            if u + width > image.width:
+                # 1行に入りきらないので次の行へ送る（敵が増えても破綻しないようにする）
+                row += 1
+                u, v = 0, row * size
             for i, pixels in enumerate(frames):
                 assert len(pixels) == size and all(len(line) == size for line in pixels), name
                 image.set(u + i * size, v, pixels)
             sprites[name] = {"u": u, "v": v, "frames": len(frames)}
-            u += len(frames) * size
-        assert u <= image.width, f"{row} 行目が画像の幅を超えています"
+            u += width
+        row += 1
 
-    # ボスだけは 16×16 なので、8×8 の行の下に置く
-    boss_v = len(build_sheet()) * size
-    boss_size = len(BOSS[0])
-    for i, pixels in enumerate(BOSS):
-        assert len(pixels) == boss_size and all(len(line) == boss_size for line in pixels)
-        image.set(i * boss_size, boss_v, pixels)
-    sprites["devourer"] = {
-        "u": 0,
-        "v": boss_v,
-        "w": boss_size,
-        "h": boss_size,
-        "frames": len(BOSS),
-    }
+    # ボスだけは 16×16 なので、8×8 の行の下に置く（左から順に並べる）
+    boss_v = row * size
+    boss_u = 0
+    for boss_id, frames in boss_sheet().items():
+        boss_size = len(frames[0][0])
+        for i, pixels in enumerate(frames):
+            assert len(pixels) == boss_size and all(len(line) == boss_size for line in pixels)
+            image.set(boss_u + i * boss_size, boss_v, pixels)
+        sprites[boss_id] = {
+            "u": boss_u,
+            "v": boss_v,
+            "w": boss_size,
+            "h": boss_size,
+            "frames": len(frames),
+        }
+        boss_u += len(frames) * boss_size
+    assert boss_u <= image.width, "ボスの行が画像の幅を超えています"
 
     config.RESOURCE_PATH.parent.mkdir(parents=True, exist_ok=True)
     pyxel.save(str(config.RESOURCE_PATH))

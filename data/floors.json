@@ -1,5 +1,11 @@
 {
   "version": 1,
+  "_comment": "areas と floors は B1F〜B20F の1周分を定義する。21F以降は同じ並びをくり返し、深くなるほど敵を強くする。",
+  "cycle": {
+    "boss_interval": 20,
+    "ending_floor": 100
+  },
+  "bosses": ["devourer", "bone_sovereign", "magma_tyrant", "void_seraph", "labyrinth_maker"],
   "areas": [
     {"id": "moss", "name": "苔むす洞窟", "floors": [1, 5], "tiles": {"floor": 3, "floor_dot": 11, "wall": 1, "wall_mortar": 3}},
     {"id": "catacomb", "name": "骸骨の地下墓地", "floors": [6, 10], "tiles": {"floor": 5, "floor_dot": 6, "wall": 13, "wall_mortar": 5}},

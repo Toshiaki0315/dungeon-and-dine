@@ -61,5 +61,9 @@ def test_every_floor_has_an_area():
     assert area_for_floor(areas, 20).name == "奈落の底"
     for floor_number in range(1, 21):
         area_for_floor(areas, floor_number)
+    # 21階から下は、1周分のエリアをくり返して使う（B21F は B1F と同じエリア）
+    assert area_for_floor(areas, 21).name == "苔むす洞窟"
+    assert area_for_floor(areas, 40).name == "奈落の底"
+    assert area_for_floor(areas, 101).name == "苔むす洞窟"
     with pytest.raises(ValueError):
-        area_for_floor(areas, 21)
+        area_for_floor(areas, 0)  # 0階は存在しない

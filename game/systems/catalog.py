@@ -85,8 +85,17 @@ class Catalog:
         catalog._validate()
         return catalog
 
+    @property
+    def cycle_length(self) -> int:
+        """敵の表が覆う階数。これを1周とし、それより下はくり返す。"""
+        return max(self.spawn_tables) if self.spawn_tables else 1
+
     def spawn_table(self, floor_number: int) -> Mapping[str, int]:
-        return self.spawn_tables.get(floor_number, {})
+        """その階に出る敵の表。定義は1周分だけ持ち、それより下はくり返して使う。"""
+        if not self.spawn_tables or floor_number < 1:
+            return self.spawn_tables.get(floor_number, {})
+        length = max(self.spawn_tables)
+        return self.spawn_tables.get((floor_number - 1) % length + 1, {})
 
     def sprite_names(self) -> set[str]:
         """敵・アイテム・宝箱・罠の定義が参照する sprites.json のキー。"""

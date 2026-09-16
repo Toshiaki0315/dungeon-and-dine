@@ -29,6 +29,11 @@
     {"id": "rock_salt", "name": "岩塩", "tags": ["調味料"], "sprite": "item_salt"},
     {"id": "wraith_essence", "name": "亡者の霊液", "tags": ["素材類"], "sprite": "item_essence"},
     {"id": "hound_meat", "name": "番犬の肉", "tags": ["肉類"], "sprite": "item_meat", "rots": true,
-     "grilled": {"id": "grilled_hound_meat", "name": "焼き番犬の肉"}}
+     "grilled": {"id": "grilled_hound_meat", "name": "焼き番犬の肉"}},
+    {"id": "spider_thread", "name": "蜘蛛の糸", "tags": ["素材類"], "sprite": "item_shell"},
+    {"id": "ghoul_flesh", "name": "屍肉", "tags": ["肉類"], "sprite": "item_meat", "rots": true,
+     "grilled": {"id": "grilled_ghoul_flesh", "name": "焼き屍肉"}},
+    {"id": "ember_core", "name": "燠火の核", "tags": ["素材類"], "sprite": "item_essence"},
+    {"id": "moth_scale", "name": "蛾の鱗粉", "tags": ["素材類"], "sprite": "item_wing"}
   ]
 }

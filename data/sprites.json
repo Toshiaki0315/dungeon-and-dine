@@ -113,289 +113,362 @@
       "v": 16,
       "frames": 2
     },
-    "chest_closed": {
+    "cave_spider": {
       "u": 192,
       "v": 16,
+      "frames": 2
+    },
+    "bog_slime": {
+      "u": 208,
+      "v": 16,
+      "frames": 2
+    },
+    "ghoul": {
+      "u": 224,
+      "v": 16,
+      "frames": 2
+    },
+    "wisp": {
+      "u": 240,
+      "v": 16,
+      "frames": 2
+    },
+    "stone_beetle": {
+      "u": 0,
+      "v": 24,
+      "frames": 2
+    },
+    "bone_knight": {
+      "u": 16,
+      "v": 24,
+      "frames": 2
+    },
+    "lava_newt": {
+      "u": 32,
+      "v": 24,
+      "frames": 2
+    },
+    "void_moth": {
+      "u": 48,
+      "v": 24,
+      "frames": 2
+    },
+    "merchant": {
+      "u": 64,
+      "v": 24,
+      "frames": 2
+    },
+    "chest_closed": {
+      "u": 80,
+      "v": 24,
       "frames": 1
     },
     "chest_open": {
-      "u": 200,
-      "v": 16,
+      "u": 88,
+      "v": 24,
       "frames": 1
     },
     "item_herb": {
       "u": 0,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_mana_herb": {
       "u": 8,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_antidote": {
       "u": 16,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_ration": {
       "u": 24,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_stove": {
       "u": 32,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_loupe": {
       "u": 40,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_scroll": {
       "u": 48,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_holy_water": {
       "u": 56,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_arrow": {
       "u": 64,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_memo": {
       "u": 72,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_gold": {
       "u": 80,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "armor_shield": {
       "u": 88,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "armor_helmet": {
       "u": 96,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "armor_body": {
       "u": 104,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "armor_shoes": {
       "u": 112,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "weapon_knife": {
       "u": 120,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "weapon_spear": {
       "u": 128,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "weapon_whip": {
       "u": 136,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "weapon_bow": {
       "u": 144,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_meat": {
       "u": 152,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_grilled_meat": {
       "u": 160,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_rotten_meat": {
       "u": 168,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_jelly": {
       "u": 176,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_wing": {
       "u": 184,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_mushroom": {
       "u": 192,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_bone": {
       "u": 200,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_shell": {
       "u": 208,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_salt": {
       "u": 216,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_essence": {
       "u": 224,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_dish": {
       "u": 232,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "item_mystery": {
       "u": 240,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "weapon_katana": {
       "u": 248,
-      "v": 24,
+      "v": 32,
       "frames": 1
     },
     "trap_pit": {
       "u": 0,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "trap_poison_arrow": {
       "u": 8,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "trap_sleep_gas": {
       "u": 16,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "trap_warp": {
       "u": 24,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "trap_hunger": {
       "u": 32,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "trap_rust": {
       "u": 40,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "trap_alarm": {
       "u": 48,
-      "v": 32,
+      "v": 40,
       "frames": 1
     },
     "floor_moss": {
       "u": 0,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "corridor_moss": {
       "u": 8,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "wall_moss": {
       "u": 16,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "floor_catacomb": {
       "u": 24,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "corridor_catacomb": {
       "u": 32,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "wall_catacomb": {
       "u": 40,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "floor_mine": {
       "u": 48,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "corridor_mine": {
       "u": 56,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "wall_mine": {
       "u": 64,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "floor_abyss": {
       "u": 72,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "corridor_abyss": {
       "u": 80,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "wall_abyss": {
       "u": 88,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "floor_bottom": {
       "u": 96,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "corridor_bottom": {
       "u": 104,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "wall_bottom": {
       "u": 112,
-      "v": 40,
+      "v": 48,
       "frames": 1
     },
     "devourer": {
       "u": 0,
-      "v": 48,
+      "v": 56,
+      "w": 16,
+      "h": 16,
+      "frames": 2
+    },
+    "bone_sovereign": {
+      "u": 32,
+      "v": 56,
+      "w": 16,
+      "h": 16,
+      "frames": 2
+    },
+    "magma_tyrant": {
+      "u": 64,
+      "v": 56,
+      "w": 16,
+      "h": 16,
+      "frames": 2
+    },
+    "void_seraph": {
+      "u": 96,
+      "v": 56,
+      "w": 16,
+      "h": 16,
+      "frames": 2
+    },
+    "labyrinth_maker": {
+      "u": 128,
+      "v": 56,
       "w": 16,
       "h": 16,
       "frames": 2

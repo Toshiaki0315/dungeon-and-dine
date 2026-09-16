@@ -84,6 +84,9 @@ def generate_boss_floor(number: int, params: MapGenParams) -> Floor:
         tiles[BOSS_CORRIDOR_Y * width + x] = Tile.CORRIDOR
 
     start = (BOSS_ENTRY.x + 1, BOSS_CORRIDOR_Y)
+    # 下り階段は奥の間のいちばん奥。ボスを倒すまでは降りられない（game_state.can_descend）
+    stairs = (BOSS_HALL.x + BOSS_HALL.w - 2, BOSS_CORRIDOR_Y)
+    tiles[stairs[1] * width + stairs[0]] = Tile.STAIRS_DOWN
     return Floor(
         number=number,
         width=width,
@@ -91,7 +94,7 @@ def generate_boss_floor(number: int, params: MapGenParams) -> Floor:
         tiles=tiles,
         rooms=[BOSS_ENTRY, BOSS_HALL],
         start=start,
-        stairs=start,  # 下り階段はない（これより下へは行けない）
+        stairs=stairs,
     )
 
 

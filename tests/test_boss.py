@@ -16,7 +16,7 @@ DEVOUR = next(a for a in BOSS.abilities if a.type == "devour")
 
 def boss_floor_state():
     state = GameState(42, PARAMS)
-    state.enter_floor(PARAMS.last_floor)
+    state.enter_floor(PARAMS.boss_interval)  # 最初のボス階（B20F）
     return state
 
 
@@ -34,19 +34,24 @@ def place_boss(state, distance=1):
 # --- 固定レイアウト（仕様書 5.3） ---
 
 
-def test_boss_floor_has_a_fixed_layout_without_stairs():
+def test_boss_floor_stairs_stay_locked_until_the_boss_is_defeated():
     state = boss_floor_state()
-    assert state.floor.number == PARAMS.last_floor
+    assert state.floor.number == PARAMS.boss_interval
     assert len(state.floor.rooms) == 2  # 手前の部屋とボスの間
-    assert Tile.STAIRS_DOWN not in state.floor.tiles
+    assert Tile.STAIRS_DOWN in state.floor.tiles  # 倒せば、さらに下へ続く
     assert state.player_on_stairs is False and state.can_descend is False
+    state.player.x, state.player.y = state.floor.stairs
+    assert state.player_on_stairs is True
+    assert state.can_descend is False  # ボスが生きている間は降りられない
+    state.floor.monsters.clear()
+    assert state.can_descend is True
 
 
 def test_boss_floor_is_the_same_every_time():
     """ランシードが違っても、ボス階の形は変わらない。"""
     first = boss_floor_state()
     second = GameState(999, PARAMS)
-    second.enter_floor(PARAMS.last_floor)
+    second.enter_floor(PARAMS.boss_interval)
     assert first.floor.tiles == second.floor.tiles
     assert first.floor.start == second.floor.start
 
@@ -125,12 +130,28 @@ def test_boss_chases_and_attacks_like_a_normal_enemy():
     assert boss.pos != (state.player.x + 4, state.player.y)  # 近づいてくる
 
 
-def test_defeating_the_boss_clears_the_run():
+def test_defeating_a_boss_before_the_ending_floor_opens_the_way_down():
+    """エンディングの階より手前のボスを倒しても、挑戦は終わらず先へ進める。"""
     state = new_state(rng_roll=0)
     boss = place_boss(state)
     boss.hp = 1
     state.face(Direction.RIGHT)
     state.attack()
+    assert state.cleared is False
+    assert state.run_over is False
+    assert "さらに下へ続く道が現れた" in log_text(state)
+
+
+def test_defeating_the_boss_on_the_ending_floor_clears_the_run():
+    state = new_state(rng_roll=0)
+    state.floor.number = PARAMS.ending_floor
+    boss = place_boss(state)
+    boss.hp = 1
+    state.face(Direction.RIGHT)
+    state.attack()
     assert state.cleared is True
-    assert state.run_over is True
+    # 迷宮に最下層はない。エンディングを見たあとも、挑戦は終わらず潜り続けられる（仕様書 5.5 / 8.3）
+    assert state.run_over is False
+    assert state.ending_shown is False  # 表示はダンジョン画面が行う
+    assert state.last_boss_name == boss.name
     assert "迷宮の主は崩れ落ちた" in log_text(state)

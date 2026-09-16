@@ -42,6 +42,8 @@
   - `game/systems/cooking.py` — 食材の定義・ドロップ率・レシピ照合・レシピ手帳
   - `game/systems/meta.py` — 拠点のデータ（資金・倉庫・持ち物・拡張）と施設の処理、死亡・生還の引き継ぎ
   - `game/systems/save.py` — `meta.json` / `run.json` の保存・読み込み（保存先パスは引数で受け取る）
+  - `game/systems/merchant.py` — 迷宮の行商人（売買・解呪・解毒）。支払いは拠点資金ではなく迷宮内の所持金
+  - `game/ui/merchant_view.py` — 行商人との対話画面
   - `game/ui/cooking_cutin.py` — 料理カットイン（ワイプ、パレットの入れ替えと復帰、演出）
   - `game/ui/audio.py` — SE と BGM（`data/sounds.json` を `pyxel.sounds` / `pyxel.musics` に読み込む）
   - `game/ui/effects.py` — ダメージ表示・被弾の点滅・画面の揺れ・レベルアップの光

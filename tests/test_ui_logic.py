@@ -6,8 +6,9 @@ from game.ui.hud import is_low
 from game.ui.log import split_markup, wrap_text
 
 
-def test_command_bar_has_six_commands_in_spec_order():
-    assert [c.label for c in COMMANDS] == ["攻撃", "道具", "スキル", "料理", "装備", "地図"]
+def test_command_bar_has_the_commands_in_spec_order():
+    # 「話す」は迷宮の行商人との対話（仕様書 12.4）
+    assert [c.label for c in COMMANDS] == ["攻撃", "道具", "スキル", "料理", "話す", "装備", "地図"]
 
 
 def test_hit_test_finds_button_under_mouse():

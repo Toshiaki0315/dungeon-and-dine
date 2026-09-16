@@ -24,7 +24,7 @@ REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
     "sprites.json": ("version", "sprites"),
     "palettes.json": ("version", "palettes"),
     "sounds.json": ("version", "se", "bgm"),
-    "floors.json": ("version", "areas", "floors"),
+    "floors.json": ("version", "areas", "floors", "cycle", "bosses"),
     "balance.json": (
         "version",
         "mapgen",

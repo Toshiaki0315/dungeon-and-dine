@@ -151,16 +151,36 @@ class App:
             controls=self.controls,
             debug=self.debug,
             finish_run=self.finish_run,
+            show_ending=self.show_ending,
             save_run=self.autosave,
             cooking_palette=self.cooking_palette,
             cutin_backgrounds=self.cutin_backgrounds,
             audio=self.audio,
         )
 
+    def show_ending(self, state: GameState) -> Scene:
+        """エンディングの階のボスを倒したときの演出（仕様書 8.3）。
+
+        迷宮に最下層はないので、挑戦はここで終わらない。見たあと、さらに潜るか帰還するかを選ぶ。
+        """
+        self.meta.clears += 1
+        self.meta.record_run(state.floor.number)
+        self.save_meta()
+        return EndingScene(
+            player_name=state.player.name,
+            boss_name=state.last_boss_name,
+            floor_number=state.floor.number,
+            turn=state.turn,
+            level=state.player.level,
+            clears=self.meta.clears,
+            controls=self.controls,
+            sprites=self.sprites,
+            to_camp=lambda: self.finish_run(state, True),
+            to_dungeon=lambda: self.dungeon(state, autosave=True),
+        )
+
     def finish_run(self, state: GameState, survived: bool) -> Scene:
         """挑戦の終わり（死亡・生還）。引き継ぎを行い、中断データを消す（仕様書 12.3）。"""
-        if state.cleared:
-            self.meta.clears += 1
         self.meta.finish_run(
             survived=survived,
             items=list(state.inventory.items),
@@ -173,16 +193,6 @@ class App:
         self.run_state = None
         save.delete_run(self.save_dir)
         self.save_meta()
-        if state.cleared:
-            return EndingScene(
-                player_name=state.player.name,
-                turn=state.turn,
-                level=state.player.level,
-                clears=self.meta.clears,
-                controls=self.controls,
-                sprites=self.sprites,
-                to_camp=self.base_camp,
-            )
         if survived:
             return self.base_camp(f"{state.player.name}は {state.player.gold}G を持ち帰った。")
         return GameOverScene(

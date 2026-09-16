@@ -19,6 +19,7 @@ WALKABLE_TILES: frozenset[Tile] = frozenset({Tile.FLOOR, Tile.CORRIDOR, Tile.STA
 
 CAMPFIRE_SPRITE = "campfire"  # 焚き火（3コマ）
 SAFE_FLOOR_SPRITE = "floor_safe"  # 焚き火の周囲（安全地帯）の床
+MERCHANT_SPRITE = "merchant"  # 迷宮の行商人（2コマ。仕様書 12.4）
 
 # sprites.json のキー。エリア別の素材は "<キー>_<エリアID>"（例: wall_moss）で定義できる。
 SPRITE_NAMES: dict[Tile, str] = {
