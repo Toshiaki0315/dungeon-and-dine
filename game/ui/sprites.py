@@ -10,6 +10,10 @@ import pyxel
 from game import config
 from game.data_loader import SpriteDef
 
+COLOR_COUNT = 16  # Pyxel のパレットの色数
+# 縁取りをずらす方向（上下左右の1px。斜めは入れず、絵が太らないようにする）
+OUTLINE_OFFSETS: tuple[tuple[int, int], ...] = ((-1, 0), (1, 0), (0, -1), (0, 1))
+
 
 class SpriteSheet:
     def __init__(self, defs: dict[str, SpriteDef]) -> None:
@@ -46,16 +50,28 @@ class SpriteSheet:
         frame: int = 0,
         colkey: int | None = config.TRANSPARENT_COLOR,
         offset: bool = False,
+        outline: int | None = None,
     ) -> None:
         """スプライトを描く。frame はフレーム数で割った余りを使う（横に並んだ次のコマ）。
 
         offset を True にすると、8×8 より大きい素材（ボス）をマスの中央に寄せて描く。
+        outline に色を渡すと、その色で1px の縁取りを付ける（仕様書 2.3.1）。
+        16色しかないため、敵や落ちているものが床と同じ色になることを避けられない。
+        縁取りで輪郭を分離して、どのエリアでも見分けられるようにする。
         """
         sprite = self._defs[name]
         u = sprite.u + (frame % sprite.frames) * sprite.w
         if offset:
             x -= (sprite.w - config.TILE_SIZE) // 2
             y -= (sprite.h - config.TILE_SIZE) // 2
+        if outline is not None and colkey is not None:
+            # 全色を縁の色に差し替えて、上下左右へ1pxずらした影を描く。
+            # 透明の判定は差し替える前の色で行われるため、輪郭だけが残る。
+            for color in range(1, COLOR_COUNT):
+                pyxel.pal(color, outline)
+            for dx, dy in OUTLINE_OFFSETS:
+                pyxel.blt(x + dx, y + dy, sprite.bank, u, sprite.v, sprite.w, sprite.h, colkey)
+            pyxel.pal()
         if colkey is None:
             pyxel.blt(x, y, sprite.bank, u, sprite.v, sprite.w, sprite.h)
         else:

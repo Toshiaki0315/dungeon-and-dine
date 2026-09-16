@@ -67,6 +67,7 @@ COLOR_FRAME = 1
 COLOR_DEBUG = 10
 COLOR_STATUS = 14
 COLOR_CURSE = 2  # 紫
+OUTLINE_COLOR = 0  # 敵・落ちているものの縁取り（黒。床に溶けないようにする）
 
 # 既知タイル（視界外）を暗く描くためのパレット置き換え（仕様書 2.3.1）
 KNOWN_TILE_PALETTE: dict[int, int] = {
@@ -518,16 +519,21 @@ class DungeonScene:
             pyxel.pal()
 
         # アイテム・宝箱・敵は視界内のものだけを描く（仕様書 5.4。ミミックと宝箱を見分けさせない）
+        # 床と同じ色の敵や品物が沈まないよう、縁取りを付けて輪郭を分ける（仕様書 2.3.1）
         for floor_item in floor.items:
             if visible(floor_item.pos):
-                self.sprites.draw(floor_item.item.definition.sprite, *screen_pos(*floor_item.pos))
+                sx, sy = screen_pos(*floor_item.pos)
+                self.sprites.draw(floor_item.item.definition.sprite, sx, sy, outline=OUTLINE_COLOR)
         for chest in floor.chests:
             if visible(chest.pos):
-                self.sprites.draw(chest.sprite_name, *screen_pos(*chest.pos))
+                sx, sy = screen_pos(*chest.pos)
+                self.sprites.draw(chest.sprite_name, sx, sy, outline=OUTLINE_COLOR)
         for monster in floor.monsters:
             if visible(monster.pos):
                 sx, sy = screen_pos(*monster.pos)
-                self.sprites.draw(monster.sprite_name, sx, sy, frame, offset=True)
+                self.sprites.draw(
+                    monster.sprite_name, sx, sy, frame, offset=True, outline=OUTLINE_COLOR
+                )
                 if self.effects.is_flashing(*monster.pos):
                     self.effects.draw_flash(sx, sy)
         px, py = screen_pos(player.x, player.y)
