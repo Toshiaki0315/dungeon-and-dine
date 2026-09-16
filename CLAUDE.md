@@ -18,6 +18,7 @@
 
 - セットアップ: `uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -r requirements.txt`
 - 起動: `.venv/bin/python main.py`（`--seed 123` でマップ再現、`--scale 2` で縮小表示）
+- 手元でのテストプレイ: `./run.sh`（macOS / Linux。Finder からは `run.command`。Windows は `run.bat`）
 - テスト: `.venv/bin/pytest`
 - Lint / フォーマット: `.venv/bin/ruff check .` / `.venv/bin/ruff format .`
 - 仮素材の再生成: `.venv/bin/python tools/make_placeholder_sprites.py`（`resources.pyxres` と `data/sprites.json` を上書き）
@@ -45,7 +46,8 @@
   - `game/ui/audio.py` — SE と BGM（`data/sounds.json` を `pyxel.sounds` / `pyxel.musics` に読み込む）
   - `game/ui/effects.py` — ダメージ表示・被弾の点滅・画面の揺れ・レベルアップの光
   - `game/ui/ranking_view.py` — ランキング（到達した階層・獲得した所持金）
-  - `game/scenes/name_input.py` — 主人公の名前の入力
+  - `game/scenes/name_input.py` — 主人公の名前の入力（五十音表）
+  - `game/ui/kana.py` — 五十音表の定義とカーソル移動（pyxel 非依存）
 - `tests/helpers.py` — テスト用マップの作成（`make_floor`）と、出目を固定する乱数（`FixedRng`）
 - `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う
 - `game/ui/` — 描画・入力（文字描画は必ず `ui/font.py` の `draw_text` 経由）

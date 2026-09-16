@@ -39,10 +39,13 @@ from game.systems.progression import exp_to_next_level  # noqa: E402
 from game.systems.skills import SKILL_ATTACK  # noqa: E402
 from game.world.direction import Direction, chebyshev  # noqa: E402
 
-HEAL_THRESHOLD = 0.4  # 最大HPのこの割合を下回ったら回復する
-HUNGRY_THRESHOLD = 25  # 満腹度がこれ以下なら食べる
-HUNT_RANGE = 6  # このマス数以内に見えている敵は倒しに行く
+HEAL_THRESHOLD = 0.5  # 最大HPのこの割合を下回ったら回復する
+HUNGRY_THRESHOLD = 40  # 満腹度がこれ以下なら食べる
+COOK_THRESHOLD = 80  # 満腹度がこれ以下なら、焚き火のそばで作りだめする
+FLEE_HP_RATIO = 0.3  # HP がこの割合を下回ったら戦わずに先を急ぐ
+HUNT_RANGE = 8  # このマス数以内に見えている敵は倒しに行く
 HUNT_HP_RATIO = 0.5  # HP がこの割合を下回ったら、敵を避けて先を急ぐ
+LEVEL_PER_FLOOR = 1.2  # この階に対するレベルの目安。足りないうちは階段へ急がない
 
 
 @dataclass
@@ -73,8 +76,10 @@ class AutoPlayer:
             return
         if self._rest_before_boss():
             return
+        if self._can_fight() and self._shoot():
+            return
         target = self._adjacent_monster()
-        if target is not None:
+        if target is not None and self._can_fight():
             direction = Direction.toward(state.player.pos, target)
             if direction is not None:
                 state.face(direction)
@@ -98,8 +103,38 @@ class AutoPlayer:
     def _eat(self) -> bool:
         if self.state.player.satiety > HUNGRY_THRESHOLD:
             return False
-        item = self._find_effect("satiety")
+        item = self._best_food()
         return item is not None and self.state.use_item(item)
+
+    def _best_food(self) -> ItemInstance | None:
+        """満腹度の回復量が大きいものから食べる（生の食材は毒の危険があるので後回し）。"""
+        foods = [
+            (effect.value, item.definition.category != CATEGORY_INGREDIENT, item)
+            for item in self.state.inventory.items
+            for effect in item.definition.effects
+            if effect.type == "satiety" and effect.value > 0
+        ]
+        if not foods:
+            return None
+        return max(foods, key=lambda f: (f[1], f[0]))[2]
+
+    def _shoot(self) -> bool:
+        """弓と矢があれば、正面の直線上の敵を撃つ。"""
+        state = self.state
+        weapon = state.effective_weapon()
+        if not weapon.uses_arrows:
+            return False
+        p = state.player
+        for monster in state.visible_monsters():
+            if monster.disguised:
+                continue
+            direction = Direction.toward(p.pos, monster.pos)
+            if direction is None or not ai.has_clear_line(state, p.pos, monster.pos, weapon.length):
+                continue
+            state.face(direction)
+            state.attack()
+            return True
+        return False
 
     def _use_attack_skill(self) -> bool:
         """MP に余裕があれば、いちばん強い攻撃スキルを使う。"""
@@ -123,7 +158,7 @@ class AutoPlayer:
     def _cook(self) -> bool:
         """焚き火のそばか携帯コンロがあり、食材が2つ以上あれば料理する。"""
         state = self.state
-        if not self._is_hungry() or state.heat_source() is None:
+        if state.player.satiety > COOK_THRESHOLD or state.heat_source() is None:
             return False
         materials = self._ingredients()[:2]
         if len(materials) < 2:
@@ -132,14 +167,26 @@ class AutoPlayer:
         return plan is not None and state.apply_cooking(plan)
 
     def _equip(self) -> bool:
-        """空いている部位に、持っている装備を着ける（未鑑定でも着ける）。"""
+        """より強い装備に持ち替える（空いている部位にはそのまま着ける）。"""
         state = self.state
         for item in state.inventory.items:
             slot = item.definition.slot
-            if slot is None or state.player.equipment[slot] is not None:
+            if slot is None or state.player.is_equipped(item):
                 continue
+            current = state.player.equipment[slot]
+            if current is not None and self._power(item) <= self._power(current):
+                continue
+            if current is not None and current.cursed:
+                continue  # 呪われていて外せない
             return state.equip(item, confirmed=True) != EquipResult.FAILED
         return False
+
+    @staticmethod
+    def _power(item: ItemInstance) -> int:
+        """装備の強さの目安（未鑑定でも、種類の基本値で比べる）。"""
+        weapon, armor = item.definition.weapon, item.definition.armor
+        base = weapon.attack if weapon is not None else (armor.defense if armor else 0)
+        return base + (item.modifier if item.identified else 0)
 
     def _find_effect(self, effect_type: str) -> ItemInstance | None:
         return next(
@@ -159,14 +206,20 @@ class AutoPlayer:
                 return monster.pos
         return None
 
+    def _needs_levels(self) -> bool:
+        """この階層に対してレベルが足りているか（足りなければ敵を探して倒す）。"""
+        state = self.state
+        return state.player.level < state.floor.number * LEVEL_PER_FLOOR
+
     def _goal(self) -> tuple[int, int]:
         """目的地。ボス階ではボス、それ以外では下り階段へ向かう。"""
         state = self.state
         if state.is_boss_floor:
             p = state.player
             hurt = p.hp < p.max_hp or p.mp < p.max_mp
-            if hurt and state.floor.campfires and not self._is_hungry():
-                return state.floor.campfires[0].pos  # まず焚き火で回復する
+            can_recover = p.satiety > 0 or self._best_food() is not None
+            if hurt and state.floor.campfires and can_recover:
+                return state.floor.campfires[0].pos  # 全快するまで焚き火で休む
             if state.floor.monsters:
                 return state.floor.monsters[0].pos
         if self._is_hungry():
@@ -191,10 +244,16 @@ class AutoPlayer:
             return False
         if p.hp >= p.max_hp and p.mp >= p.max_mp:
             return False
-        if p.satiety <= HUNGRY_THRESHOLD:
-            return False  # 腹が減ってきたら、待っていられない
+        if self._best_food() is not None and p.satiety <= COOK_THRESHOLD:
+            return False  # 食べられるうちは食べて、満腹度を保ちながら回復する
+        if p.satiety <= 0:
+            return False  # 満腹度が尽きたら、待っていても減るだけ
         state.wait()
         return True
+
+    def _can_fight(self) -> bool:
+        p = self.state.player
+        return p.hp >= p.max_hp * FLEE_HP_RATIO
 
     def _is_hungry(self) -> bool:
         return self.state.player.satiety <= HUNGRY_THRESHOLD * 2
