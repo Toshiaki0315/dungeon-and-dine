@@ -23,6 +23,7 @@
 - 仮素材の再生成: `.venv/bin/python tools/make_placeholder_sprites.py`（`resources.pyxres` と `data/sprites.json` を上書き）
 - カットイン背景の生成: `.venv/bin/python tools/make_cutin_background.py`（`assets/cutins/cooking_moss.png` を上書き）
 - 自動プレイでバランス確認: `.venv/bin/python tools/simulate.py --runs 20`（`--start-floor` / `--start-level` で終盤だけ試せる）
+- 配布用ビルド: `.venv/bin/python tools/build.py`（PyInstaller。3 OS 分は `.github/workflows/build.yml` が各 OS で実行する）
 
 ## ディレクトリ構成
 
@@ -43,6 +44,8 @@
   - `game/ui/cooking_cutin.py` — 料理カットイン（ワイプ、パレットの入れ替えと復帰、演出）
   - `game/ui/audio.py` — SE と BGM（`data/sounds.json` を `pyxel.sounds` / `pyxel.musics` に読み込む）
   - `game/ui/effects.py` — ダメージ表示・被弾の点滅・画面の揺れ・レベルアップの光
+  - `game/ui/ranking_view.py` — ランキング（到達した階層・獲得した所持金）
+  - `game/scenes/name_input.py` — 主人公の名前の入力
 - `tests/helpers.py` — テスト用マップの作成（`make_floor`）と、出目を固定する乱数（`FixedRng`）
 - `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う
 - `game/ui/` — 描画・入力（文字描画は必ず `ui/font.py` の `draw_text` 経由）

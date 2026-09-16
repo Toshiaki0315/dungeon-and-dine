@@ -12,6 +12,7 @@ from typing import Any
 
 from game.data_loader import DataValidationError, dataclass_from_dict
 from game.entities.item import SLOTS, ItemDef, ItemInstance
+from game.entities.player import PLAYER_NAME
 from game.systems.cooking import Notebook
 from game.systems.inventory import Inventory
 
@@ -78,6 +79,41 @@ class Loadout:
         self.equipment = dict.fromkeys(SLOTS)
 
 
+RANKING_SIZE = 10  # ランキングに並べる件数
+SCORE_CAPACITY = 50  # 保存しておく記録の数（古いものから捨てる）
+NAME_MAX_LENGTH = 10  # 主人公の名前の長さ（仕様書 6.1）
+
+OUTCOME_CLEAR = "clear"
+OUTCOME_RETURN = "return"
+OUTCOME_DEATH = "death"
+OUTCOME_LABELS = {OUTCOME_CLEAR: "クリア", OUTCOME_RETURN: "生還", OUTCOME_DEATH: "力尽きた"}
+
+
+@dataclass(frozen=True)
+class ScoreEntry:
+    """1回の挑戦の記録（ランキング用）。"""
+
+    name: str
+    floor: int
+    gold: int
+    turn: int
+    outcome: str
+
+    @property
+    def outcome_label(self) -> str:
+        return OUTCOME_LABELS.get(self.outcome, self.outcome)
+
+
+def ranking_by_floor(scores: list[ScoreEntry], size: int = RANKING_SIZE) -> list[ScoreEntry]:
+    """到達した階層の深い順。同じ階層なら、ターン数が少ないほうを上にする。"""
+    return sorted(scores, key=lambda s: (-s.floor, s.turn))[:size]
+
+
+def ranking_by_gold(scores: list[ScoreEntry], size: int = RANKING_SIZE) -> list[ScoreEntry]:
+    """獲得した所持金の多い順。"""
+    return sorted(scores, key=lambda s: (-s.gold, s.turn))[:size]
+
+
 @dataclass
 class MetaProgress:
     """死亡しても残るデータ（仕様書 12.3）。meta.json に保存する。"""
@@ -90,6 +126,8 @@ class MetaProgress:
     storage_expansions: int = 0
     clears: int = 0
     deepest_floor: int = 1
+    player_name: str = PLAYER_NAME
+    scores: list[ScoreEntry] = field(default_factory=list)
 
     @classmethod
     def new(cls, inventory_capacity: int, stack_max: int, params: BaseCampParams) -> MetaProgress:
@@ -101,6 +139,11 @@ class MetaProgress:
     def record_run(self, floor_number: int) -> None:
         self.deepest_floor = max(self.deepest_floor, floor_number)
 
+    def record_score(self, entry: ScoreEntry) -> None:
+        """ランキング用に、1回の挑戦の結果を残す（仕様書 6.6）。"""
+        self.scores.append(entry)
+        del self.scores[:-SCORE_CAPACITY]
+
     def finish_run(
         self,
         *,
@@ -109,12 +152,16 @@ class MetaProgress:
         equipment: Mapping[str, ItemInstance | None],
         gold: int,
         floor_number: int,
+        turn: int = 0,
+        cleared: bool = False,
     ) -> None:
-        """挑戦の終わりに引き継ぎを行う（仕様書 12.3）。
+        """挑戦の終わりに引き継ぎを行い、ランキングに記録する（仕様書 6.6 / 12.3）。
 
         生還: 所持品と装備をそのまま持ち帰り、所持金は拠点資金に加える（呪いは残る）。
         死亡: 所持品・装備・所持金を失う。
         """
+        outcome = OUTCOME_CLEAR if cleared else OUTCOME_RETURN if survived else OUTCOME_DEATH
+        self.record_score(ScoreEntry(self.player_name, floor_number, gold, turn, outcome))
         self.record_run(floor_number)
         if not survived:
             self.loadout.clear()

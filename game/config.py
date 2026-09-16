@@ -6,10 +6,20 @@ UI 層で `getattr(pyxel, name)` に変換して使う。
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
+
+def _root_dir() -> Path:
+    """素材とデータの置き場所。実行ファイル（PyInstaller）にしたときは展開先を指す。"""
+    bundled = getattr(sys, "_MEIPASS", None)
+    if bundled is not None:
+        return Path(bundled)
+    return Path(__file__).resolve().parent.parent
+
+
 # --- パス（カレントディレクトリに依存しない） ---
-ROOT_DIR: Path = Path(__file__).resolve().parent.parent
+ROOT_DIR: Path = _root_dir()
 ASSETS_DIR: Path = ROOT_DIR / "assets"
 DATA_DIR: Path = ROOT_DIR / "data"
 FONT_PATH: Path = ASSETS_DIR / "fonts" / "misaki_gothic_2nd.bdf"

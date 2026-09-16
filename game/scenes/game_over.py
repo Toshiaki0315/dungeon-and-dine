@@ -11,8 +11,10 @@ import pyxel
 
 from game import config
 from game.scenes import Scene
+from game.systems.meta import MetaProgress, ScoreEntry
 from game.ui import font
 from game.ui.input import Controls
+from game.ui.ranking_view import RankingView
 
 COLOR_TITLE = 8
 COLOR_TEXT = 7
@@ -29,6 +31,8 @@ class GameOverScene:
         turn: int,
         controls: Controls,
         to_camp: Callable[[], Scene],
+        meta: MetaProgress | None = None,
+        latest: ScoreEntry | None = None,
     ) -> None:
         self.player_name = player_name
         self.floor_number = floor_number
@@ -36,17 +40,22 @@ class GameOverScene:
         self.controls = controls
         self.to_camp = to_camp
         self.frames = 0
+        self.ranking = RankingView(meta, latest) if meta is not None else None
 
     def update(self) -> Scene | None:
         self.frames += 1
+        if self.ranking is not None:
+            self.ranking.update(self.controls)
         if self.frames >= INPUT_DELAY_FRAMES and self.controls.triggered("confirm"):
             return self.to_camp()
         return None
 
     def draw(self) -> None:
         pyxel.cls(0)
-        font.draw_text_centered(56, f"{self.player_name}は力尽きた……", COLOR_TITLE)
-        font.draw_text_centered(76, f"B{self.floor_number}F  {self.turn}ターン", COLOR_TEXT)
-        font.draw_text_centered(96, "所持品と所持金は失われた。", COLOR_HINT)
+        font.draw_text_centered(6, f"{self.player_name}は力尽きた……", COLOR_TITLE)
+        summary = f"B{self.floor_number}F  {self.turn}ターン  所持品と所持金は失われた。"
+        font.draw_text_centered(18, summary, COLOR_HINT)
+        if self.ranking is not None:
+            self.ranking.draw(8, 32, config.SCREEN_WIDTH - 16, 132)
         if self.frames >= INPUT_DELAY_FRAMES:
-            font.draw_text_centered(124, "Enter: 拠点に戻る", COLOR_HINT)
+            font.draw_text_centered(config.SCREEN_HEIGHT - 12, "Enter: 拠点に戻る", COLOR_HINT)

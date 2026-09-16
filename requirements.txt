@@ -3,3 +3,4 @@ pyxel>=2.0,<3
 # 開発用
 pytest>=8
 ruff>=0.6
+pyinstaller>=6  # 配布用の実行ファイルを作る（tools/build.py）

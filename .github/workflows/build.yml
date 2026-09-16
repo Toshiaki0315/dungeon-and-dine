@@ -1,0 +1,63 @@
+name: build
+
+# Mac / Windows / Linux の実行ファイルを作る（PyInstaller は実行した OS 向けしか作れないため、
+# 3 つのランナーでそれぞれビルドする）。成果物は Actions の artifacts からダウンロードできる。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 依存関係を入れる
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Lint とテスト
+        run: |
+          ruff check .
+          ruff format --check .
+          pytest -q
+
+  build:
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            artifact: DungeonAndDine-macos
+          - os: windows-latest
+            artifact: DungeonAndDine-windows
+          - os: ubuntu-latest
+            artifact: DungeonAndDine-linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Linux の依存パッケージ（Pyxel の SDL2）
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libsdl2-dev libasound2-dev
+      - name: 依存関係を入れる
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: ビルド
+        run: python tools/build.py
+      - name: 成果物をアップロード
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            dist/DungeonAndDine
+            dist/DungeonAndDine.exe
+            dist/DungeonAndDine.app
+          if-no-files-found: error

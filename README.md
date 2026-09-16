@@ -147,6 +147,32 @@ python3.11 -m venv .venv
   - 料理カットインの背景素材（`assets/cutins/cooking_moss.png`）
   - 自動プレイ（`tools/simulate.py`）で 20 階層分のバランスを確認・調整
 
+## 追加した機能（仕様書の改訂を含む）
+
+- **名前の入力**: 「はじめる」を選ぶと主人公の名前を入力できる（半角英数10文字まで。未入力なら「レオ」）。
+  入力した名前は `meta.json` に保存し、次回からの既定値になる。
+  Pyxel の文字入力は半角しか受け取れないため、日本語は入力できない（仕様書 6.1 もこの内容に更新した）。
+- **ランキング**: ゲームオーバー画面に、これまでの挑戦の順位を表示する（仕様書 6.6）。
+  「到達した階層」と「獲得した所持金」の2種類を左右キーで切り替え、それぞれ上位10件を並べる。
+  記録は名前・到達階・所持金・ターン数・結果（クリア／生還／力尽きた）で、`meta.json` に最大50件残す。
+  今回の記録は黄色、クリアした挑戦は緑で示す。
+
+## 配布用ビルド
+
+Mac / Windows / Linux の実行ファイルを作れる。PyInstaller は実行した OS 向けの実行ファイルしか作れないため、
+3 OS 分は GitHub Actions（`.github/workflows/build.yml`）で各 OS のランナーがビルドする。
+
+```bash
+# 手元の OS 向けにビルドする（dist/ に出力）
+uv pip install --python .venv/bin/python pyinstaller
+.venv/bin/python tools/build.py
+```
+
+- GitHub 上では、`v` で始まるタグを push するか、Actions の画面から手動実行するとビルドが走る。
+  成果物（`DungeonAndDine-macos` / `-windows` / `-linux`）は Actions の artifacts からダウンロードできる。
+- ビルドした実行ファイルには `assets/` と `data/` を同梱する。`game/config.py` は、実行ファイルとして
+  起動した場合に展開先のフォルダを見るようにしている。
+
 ## 実装上の判断（仕様書 16章）
 
 - 仕様書などの資料は `docs/` にまとめた。

@@ -15,6 +15,7 @@ from game.scenes.base_camp import BaseCampScene
 from game.scenes.dungeon import DungeonScene
 from game.scenes.ending import EndingScene
 from game.scenes.game_over import GameOverScene
+from game.scenes.name_input import NameInputScene
 from game.scenes.title import TitleScene
 from game.systems import save
 from game.systems.game_state import GameParams, GameState
@@ -84,11 +85,25 @@ class App:
             controls=self.controls,
             sprites=self.sprites,
             meta=self.meta,
-            start=self.base_camp,
+            start=self.name_input,
             resume=self.resume_run,
             quit_game=pyxel.quit,
             has_run=save.run_exists(self.save_dir),
         )
+
+    def name_input(self) -> Scene:
+        """はじめるときに主人公の名前を入力する（仕様書 6.1）。"""
+        return NameInputScene(
+            controls=self.controls,
+            meta=self.meta,
+            sprites=self.sprites,
+            on_done=self._name_decided,
+        )
+
+    def _name_decided(self, name: str) -> Scene:
+        self.meta.player_name = name
+        self.save_meta()
+        return self.base_camp(f"{name}、迷宮へようこそ。")
 
     def base_camp(self, message: str = "") -> Scene:
         self.audio.play_bgm("camp")
@@ -111,6 +126,7 @@ class App:
             self.params,
             self.meta.notebook,
         )
+        state.player.name = self.meta.player_name
         state.take_loadout(self.meta.loadout)
         self.meta.loadout.clear()  # 持ち込んだので、拠点には残らない
         self.save_meta()
@@ -151,6 +167,8 @@ class App:
             equipment=dict(state.player.equipment),
             gold=state.player.gold,
             floor_number=state.floor.number,
+            turn=state.turn,
+            cleared=state.cleared,
         )
         self.run_state = None
         save.delete_run(self.save_dir)
@@ -173,6 +191,8 @@ class App:
             turn=state.turn,
             controls=self.controls,
             to_camp=self.base_camp,
+            meta=self.meta,
+            latest=self.meta.scores[-1] if self.meta.scores else None,
         )
 
     # --- セーブ ---

@@ -14,11 +14,11 @@ from typing import TYPE_CHECKING, Any
 
 from game.entities.item import SLOTS, Chest, EquipmentTrait, FloorItem, ItemInstance
 from game.entities.monster import Monster
-from game.entities.player import Player
+from game.entities.player import PLAYER_NAME, Player
 from game.systems.catalog import Catalog
 from game.systems.cooking import Notebook
 from game.systems.inventory import Inventory
-from game.systems.meta import BaseCampParams, Loadout, MetaProgress
+from game.systems.meta import BaseCampParams, Loadout, MetaProgress, ScoreEntry
 from game.systems.traps import Trap
 from game.world.direction import Direction
 from game.world.floor import Campfire, Floor, Rect
@@ -173,6 +173,17 @@ def meta_to_dict(meta: MetaProgress) -> dict[str, Any]:
         "storage_expansions": meta.storage_expansions,
         "clears": meta.clears,
         "deepest_floor": meta.deepest_floor,
+        "player_name": meta.player_name,
+        "scores": [
+            {
+                "name": s.name,
+                "floor": s.floor,
+                "gold": s.gold,
+                "turn": s.turn,
+                "outcome": s.outcome,
+            }
+            for s in meta.scores
+        ],
     }
 
 
@@ -195,6 +206,18 @@ def meta_from_dict(
         storage_expansions=int(data["storage_expansions"]),
         clears=int(data["clears"]),
         deepest_floor=int(data["deepest_floor"]),
+        # 名前とランキングは後から加えた項目なので、古いセーブデータでも読めるようにする
+        player_name=str(data.get("player_name") or PLAYER_NAME),
+        scores=[
+            ScoreEntry(
+                str(s["name"]),
+                int(s["floor"]),
+                int(s["gold"]),
+                int(s["turn"]),
+                str(s["outcome"]),
+            )
+            for s in data.get("scores", ())
+        ],
     )
 
 
@@ -218,6 +241,7 @@ def load_meta(save_dir: Path, params: GameParams, camp: BaseCampParams) -> MetaP
 
 def player_to_dict(player: Player, items: list[ItemInstance]) -> dict[str, Any]:
     return {
+        "name": player.name,
         "x": player.x,
         "y": player.y,
         "facing": player.facing.name,
@@ -245,6 +269,7 @@ def player_to_dict(player: Player, items: list[ItemInstance]) -> dict[str, Any]:
 
 def player_from_dict(data: Mapping[str, Any], items: list[ItemInstance]) -> Player:
     player = Player(
+        name=str(data.get("name") or PLAYER_NAME),
         x=int(data["x"]),
         y=int(data["y"]),
         facing=Direction[data["facing"]],

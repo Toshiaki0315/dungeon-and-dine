@@ -30,6 +30,7 @@ assets/fonts/*
 build/
 dist/
 *.pyxapp
+*.spec
 
 # OS / エディタ
 .DS_Store
