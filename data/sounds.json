@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "se": {
+    "attack": {"notes": "c2e2", "tones": "nn", "volumes": "43", "effects": "ff", "speed": 8},
+    "skill": {"notes": "c3e3g3", "tones": "ppp", "volumes": "444", "effects": "nnf", "speed": 7},
+    "hit": {"notes": "f1c1", "tones": "nn", "volumes": "54", "effects": "ff", "speed": 9},
+    "pickup": {"notes": "e3a3", "tones": "pp", "volumes": "33", "effects": "nn", "speed": 6},
+    "cook": {"notes": "c3e3g3c4", "tones": "pppp", "volumes": "4444", "effects": "nnns", "speed": 9},
+    "curse": {"notes": "c1b0a0g0", "tones": "nnnn", "volumes": "5555", "effects": "ffff", "speed": 14},
+    "level_up": {"notes": "c3e3g3c4e4", "tones": "sssss", "volumes": "44444", "effects": "nnnns", "speed": 8},
+    "stairs": {"notes": "g2c3", "tones": "tt", "volumes": "33", "effects": "ns", "speed": 12},
+    "death": {"notes": "c2g1e1c1", "tones": "tttt", "volumes": "5555", "effects": "nnns", "speed": 18},
+    "roar": {"notes": "c0c0f0c0", "tones": "nnnn", "volumes": "6666", "effects": "vvvf", "speed": 16},
+    "clear": {"notes": "c3g3c4e4g4c4", "tones": "ssssss", "volumes": "555555", "effects": "nnnnns", "speed": 10}
+  },
+  "bgm": {
+    "title": {
+      "speed": 26,
+      "channels": [
+        {"notes": "c2 e2 g2 e2 f2 a2 c3 a2", "tones": "t", "volumes": "3", "effects": "n"},
+        {"notes": "c1 r g0 r f1 r c1 r", "tones": "t", "volumes": "2", "effects": "n"}
+      ]
+    },
+    "camp": {
+      "speed": 30,
+      "channels": [
+        {"notes": "g2 e2 c2 e2 a2 f2 c2 f2", "tones": "s", "volumes": "3", "effects": "n"},
+        {"notes": "c1 r c1 r f0 r f0 r", "tones": "t", "volumes": "2", "effects": "n"}
+      ]
+    },
+    "moss": {
+      "speed": 32,
+      "channels": [
+        {"notes": "a1 c2 e2 c2 g1 b1 d2 b1", "tones": "t", "volumes": "2", "effects": "n"},
+        {"notes": "a0 r r r g0 r r r", "tones": "t", "volumes": "2", "effects": "n"}
+      ]
+    },
+    "catacomb": {
+      "speed": 34,
+      "channels": [
+        {"notes": "d2 f2 a1 f2 c2 e2 g1 e2", "tones": "t", "volumes": "2", "effects": "n"},
+        {"notes": "d0 r r r c0 r r r", "tones": "t", "volumes": "2", "effects": "n"}
+      ]
+    },
+    "mine": {
+      "speed": 26,
+      "channels": [
+        {"notes": "e2 g2 b2 g2 d2 f2 a2 f2", "tones": "p", "volumes": "2", "effects": "n"},
+        {"notes": "e0 e0 r e0 d0 d0 r d0", "tones": "t", "volumes": "2", "effects": "n"}
+      ]
+    },
+    "abyss": {
+      "speed": 36,
+      "channels": [
+        {"notes": "c2 b1 a1 g1 f1 g1 a1 b1", "tones": "t", "volumes": "2", "effects": "v"},
+        {"notes": "c0 r r r f0 r r r", "tones": "t", "volumes": "2", "effects": "n"}
+      ]
+    },
+    "bottom": {
+      "speed": 22,
+      "channels": [
+        {"notes": "c2 c2 d2 c2 b1 c2 e2 c2", "tones": "p", "volumes": "3", "effects": "n"},
+        {"notes": "c0 c0 c0 c0 b0 b0 b0 b0", "tones": "n", "volumes": "2", "effects": "n"}
+      ]
+    }
+  }
+}

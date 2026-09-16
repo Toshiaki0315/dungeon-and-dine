@@ -20,7 +20,8 @@ AI_ERRATIC = "erratic"
 AI_RANGED = "ranged"
 AI_AMBUSH = "ambush"
 AI_FLEE = "flee"
-AI_TYPES = (AI_CHASE, AI_WANDER, AI_ERRATIC, AI_RANGED, AI_AMBUSH, AI_FLEE)
+AI_BOSS = "boss"  # B20F の「奈落の大喰らい」（仕様書 8.3）
+AI_TYPES = (AI_CHASE, AI_WANDER, AI_ERRATIC, AI_RANGED, AI_AMBUSH, AI_FLEE, AI_BOSS)
 
 MODE_IDLE = "idle"  # その場で待つ
 MODE_WANDER = "wander"  # ランダムに徘徊する
@@ -28,6 +29,9 @@ MODE_CHASE = "chase"  # プレイヤー（または最後に見た位置）へ�
 
 ABILITY_ON_HIT_STATUS = "on_hit_status"
 ABILITY_BREATH = "breath"
+ABILITY_ROAR = "roar"  # interval ターンごとに、range マス以内のプレイヤーを status にする
+ABILITY_ENRAGE = "enrage"  # HP が hp_ratio 以下になると speed になる
+ABILITY_DEVOUR = "devour"  # 隣接しているプレイヤーの満腹度を value 奪い、そのぶん回復する
 
 CHEST_SPRITE = CHEST_CLOSED_SPRITE  # ミミックの擬態中の見た目
 
@@ -39,6 +43,10 @@ class Ability:
     chance: int = 100
     range: int = 0
     element: str | None = None
+    interval: int = 0  # 何ターンごとに使うか（咆哮）
+    value: int = 0  # 効果量（捕食で奪う満腹度）
+    hp_ratio: float = 0.0  # この割合以下の HP で使う（憤怒・捕食）
+    speed: int = 0  # 変化後の速度（憤怒）
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Ability:
@@ -48,6 +56,10 @@ class Ability:
             chance=int(data.get("chance", 100)),
             range=int(data.get("range", 0)),
             element=data.get("element"),
+            interval=int(data.get("interval", 0)),
+            value=int(data.get("value", 0)),
+            hp_ratio=float(data.get("hp_ratio", 0.0)),
+            speed=int(data.get("speed", 0)),
         )
 
 
@@ -110,6 +122,7 @@ class Monster(Entity):
     mode: str
     target: tuple[int, int] | None = None  # 追いかけている位置
     disguised: bool = False
+    turns_acted: int = 0  # 行動した回数（ボスの咆哮の間隔に使う）
 
     @classmethod
     def spawn(cls, definition: MonsterDef, x: int, y: int, uid: int) -> Monster:

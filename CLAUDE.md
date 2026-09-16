@@ -21,6 +21,8 @@
 - テスト: `.venv/bin/pytest`
 - Lint / フォーマット: `.venv/bin/ruff check .` / `.venv/bin/ruff format .`
 - 仮素材の再生成: `.venv/bin/python tools/make_placeholder_sprites.py`（`resources.pyxres` と `data/sprites.json` を上書き）
+- カットイン背景の生成: `.venv/bin/python tools/make_cutin_background.py`（`assets/cutins/cooking_moss.png` を上書き）
+- 自動プレイでバランス確認: `.venv/bin/python tools/simulate.py --runs 20`（`--start-floor` / `--start-level` で終盤だけ試せる）
 
 ## ディレクトリ構成
 
@@ -39,6 +41,8 @@
   - `game/systems/meta.py` — 拠点のデータ（資金・倉庫・持ち物・拡張）と施設の処理、死亡・生還の引き継ぎ
   - `game/systems/save.py` — `meta.json` / `run.json` の保存・読み込み（保存先パスは引数で受け取る）
   - `game/ui/cooking_cutin.py` — 料理カットイン（ワイプ、パレットの入れ替えと復帰、演出）
+  - `game/ui/audio.py` — SE と BGM（`data/sounds.json` を `pyxel.sounds` / `pyxel.musics` に読み込む）
+  - `game/ui/effects.py` — ダメージ表示・被弾の点滅・画面の揺れ・レベルアップの光
 - `tests/helpers.py` — テスト用マップの作成（`make_floor`）と、出目を固定する乱数（`FixedRng`）
 - `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う
 - `game/ui/` — 描画・入力（文字描画は必ず `ui/font.py` の `draw_text` 経由）

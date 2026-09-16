@@ -65,6 +65,36 @@ class _Node:
         return self.left.rooms() + self.right.rooms()
 
 
+# B20F の固定レイアウト（仕様書 5.3 / 8.3）。手前の部屋 → 通路 → ボスの間。
+BOSS_ENTRY = Rect(6, 19, 9, 9)
+BOSS_HALL = Rect(26, 12, 23, 23)
+BOSS_CORRIDOR_Y = 23
+
+
+def generate_boss_floor(number: int, params: MapGenParams) -> Floor:
+    """ボス階を作る。ランダム生成せず、毎回同じ形にする。階段は置かない。"""
+    width, height = params.width, params.height
+    if width < BOSS_HALL.x + BOSS_HALL.w + 1 or height < BOSS_HALL.y + BOSS_HALL.h + 1:
+        raise MapGenError("ボス階のレイアウトが入る大きさがありません")
+    tiles = [Tile.WALL] * (width * height)
+    for room in (BOSS_ENTRY, BOSS_HALL):
+        for x, y in room.cells():
+            tiles[y * width + x] = Tile.FLOOR
+    for x in range(BOSS_ENTRY.x + BOSS_ENTRY.w, BOSS_HALL.x):
+        tiles[BOSS_CORRIDOR_Y * width + x] = Tile.CORRIDOR
+
+    start = (BOSS_ENTRY.x + 1, BOSS_CORRIDOR_Y)
+    return Floor(
+        number=number,
+        width=width,
+        height=height,
+        tiles=tiles,
+        rooms=[BOSS_ENTRY, BOSS_HALL],
+        start=start,
+        stairs=start,  # 下り階段はない（これより下へは行けない）
+    )
+
+
 def generate_floor(rng: random.Random, number: int, params: MapGenParams) -> Floor:
     """1階層分のマップを生成する。同じ乱数状態・パラメータなら同じマップになる。"""
     params.validate()

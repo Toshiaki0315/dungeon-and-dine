@@ -10,7 +10,7 @@ DATA = data_loader.load_all()
 
 def test_catalog_loads_all_definitions():
     catalog = Catalog.from_data(DATA)
-    assert len(catalog.monsters) == 12
+    assert len(catalog.monsters) == 13  # 12種 + B20F のボス
     assert {"knife", "spear", "whip", "bow", "katana"} <= set(catalog.items)
     assert len(catalog.traps) == 7
     assert len(catalog.skills) == 7
@@ -28,7 +28,9 @@ def test_every_floor_has_monsters_within_their_floor_range():
 
 def test_spec_values_for_monsters():
     rat = Catalog.from_data(DATA).monsters["giant_rat"]
-    assert (rat.hp, rat.atk, rat.defense, rat.exp, rat.speed, rat.ai) == (10, 4, 1, 3, 100, "chase")
+    # 経験値はフェーズ7で調整した（仕様書 8.2 の【仮】値は 3）
+    assert (rat.hp, rat.atk, rat.defense, rat.speed, rat.ai) == (10, 4, 1, 100, "chase")
+    assert rat.exp == 5
 
 
 def test_skills_are_learned_at_spec_levels():

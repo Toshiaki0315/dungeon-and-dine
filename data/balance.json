@@ -23,7 +23,7 @@
     "satiety": 100
   },
   "survival": {
-    "satiety_decay_interval": 10,
+    "satiety_decay_interval": 14,
     "hunger_warning_threshold": 20,
     "starvation_damage": 1,
     "hp_regen_interval": 5,
@@ -36,9 +36,9 @@
     "exp_base": 10,
     "exp_exponent": 1.5,
     "max_level": 30,
-    "hp_per_level": 5,
-    "mp_per_level": 2,
-    "atk_per_level": 1,
+    "hp_per_level": 8,
+    "mp_per_level": 3,
+    "atk_per_level": 2,
     "def_per_odd_level": 1
   },
   "combat": {
@@ -155,10 +155,10 @@
     ]
   },
   "cooking": {
-    "drop_chance": 30,
+    "drop_chance": 35,
     "rot_turns": 500,
     "fail_chance": 5,
-    "campfire_chance": 30,
+    "campfire_chance": 40,
     "campfire_floors": [5, 10, 15, 19],
     "memo_gold": 50,
     "mystery_penalties": [

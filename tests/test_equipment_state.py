@@ -75,7 +75,7 @@ def test_cursed_equipment_cannot_be_removed_dropped_or_replaced():
     armor = give(state, "leather_armor", identified=False, curse=TRAITS["skill_seal"], modifier=-2)
     state.equip(armor, confirmed=True)
     assert "呪われていた" in log_text(state)
-    assert state.consume_effects() == [EFFECT_CURSE]
+    assert [e.kind for e in state.consume_events()] == [EFFECT_CURSE]
     assert state.unequip(armor) == EquipResult.FAILED
     assert not state.drop_item(armor)
     assert not state.throw_item(armor)

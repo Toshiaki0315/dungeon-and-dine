@@ -317,6 +317,88 @@
       "u": 48,
       "v": 32,
       "frames": 1
+    },
+    "floor_moss": {
+      "u": 0,
+      "v": 40,
+      "frames": 1
+    },
+    "corridor_moss": {
+      "u": 8,
+      "v": 40,
+      "frames": 1
+    },
+    "wall_moss": {
+      "u": 16,
+      "v": 40,
+      "frames": 1
+    },
+    "floor_catacomb": {
+      "u": 24,
+      "v": 40,
+      "frames": 1
+    },
+    "corridor_catacomb": {
+      "u": 32,
+      "v": 40,
+      "frames": 1
+    },
+    "wall_catacomb": {
+      "u": 40,
+      "v": 40,
+      "frames": 1
+    },
+    "floor_mine": {
+      "u": 48,
+      "v": 40,
+      "frames": 1
+    },
+    "corridor_mine": {
+      "u": 56,
+      "v": 40,
+      "frames": 1
+    },
+    "wall_mine": {
+      "u": 64,
+      "v": 40,
+      "frames": 1
+    },
+    "floor_abyss": {
+      "u": 72,
+      "v": 40,
+      "frames": 1
+    },
+    "corridor_abyss": {
+      "u": 80,
+      "v": 40,
+      "frames": 1
+    },
+    "wall_abyss": {
+      "u": 88,
+      "v": 40,
+      "frames": 1
+    },
+    "floor_bottom": {
+      "u": 96,
+      "v": 40,
+      "frames": 1
+    },
+    "corridor_bottom": {
+      "u": 104,
+      "v": 40,
+      "frames": 1
+    },
+    "wall_bottom": {
+      "u": 112,
+      "v": 40,
+      "frames": 1
+    },
+    "devourer": {
+      "u": 0,
+      "v": 48,
+      "w": 16,
+      "h": 16,
+      "frames": 2
     }
   }
 }

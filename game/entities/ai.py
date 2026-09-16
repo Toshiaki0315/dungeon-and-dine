@@ -1,4 +1,4 @@
-"""敵AI（chase / wander / erratic / ranged / ambush / flee）。仕様書 8.1。
+"""敵AI（chase / wander / erratic / ranged / ambush / flee / boss）。仕様書 8.1 / 8.3。
 
 pyxel を import しないこと。
 """
@@ -14,7 +14,11 @@ from typing import Any, Protocol
 from game.data_loader import dataclass_from_dict
 from game.entities.monster import (
     ABILITY_BREATH,
+    ABILITY_DEVOUR,
+    ABILITY_ENRAGE,
+    ABILITY_ROAR,
     AI_AMBUSH,
+    AI_BOSS,
     AI_ERRATIC,
     AI_FLEE,
     AI_RANGED,
@@ -65,6 +69,10 @@ class AIContext(Protocol):
 
     def monster_breath(self, monster: Monster, ability: Ability) -> None: ...
 
+    def monster_roar(self, monster: Monster, ability: Ability) -> None: ...
+
+    def monster_devour(self, monster: Monster, ability: Ability) -> None: ...
+
     def reveal_monster(self, monster: Monster) -> None: ...
 
 
@@ -85,6 +93,11 @@ def take_turn(monster: Monster, ctx: AIContext, params: AIParams) -> None:
     if sees:
         monster.target = player
         monster.mode = MODE_CHASE
+
+    if ai == AI_BOSS:
+        monster.turns_acted += 1
+        if _boss_special(monster, ctx):
+            return
 
     if ai == AI_ERRATIC and ctx.rng.randrange(100) < params.erratic_move_chance:
         _random_step(monster, ctx)
@@ -120,6 +133,34 @@ def take_turn(monster: Monster, ctx: AIContext, params: AIParams) -> None:
     )
     if step is not None:
         ctx.move_monster(monster, step)
+
+
+def _boss_special(monster: Monster, ctx: AIContext) -> bool:
+    """ボスの特殊行動（仕様書 8.3）。咆哮か捕食を使ったら True を返す。"""
+    player = ctx.player_pos
+    enrage = monster.ability(ABILITY_ENRAGE)
+    if enrage is not None and monster.hp <= monster.max_hp * enrage.hp_ratio:
+        monster.speed = enrage.speed  # HP が減ると速くなる
+
+    devour = monster.ability(ABILITY_DEVOUR)
+    if (
+        devour is not None
+        and monster.hp <= monster.max_hp * devour.hp_ratio
+        and can_melee(ctx.floor, monster.pos, player)
+    ):
+        ctx.monster_devour(monster, devour)
+        return True
+
+    roar = monster.ability(ABILITY_ROAR)
+    if (
+        roar is not None
+        and roar.interval > 0
+        and monster.turns_acted % roar.interval == 0
+        and chebyshev(monster.pos, player) <= roar.range
+    ):
+        ctx.monster_roar(monster, roar)
+        return True
+    return False
 
 
 def can_melee(floor: Floor, attacker: Position, target: Position) -> bool:

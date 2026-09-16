@@ -13,12 +13,23 @@ import pyxel
 from game import config
 from game.entities.item import ItemInstance
 from game.scenes import Scene
-from game.systems.game_state import EFFECT_CURSE, EquipResult, GameState, MoveResult
+from game.systems.game_state import (
+    EFFECT_CURSE,
+    EFFECT_HIT,
+    EFFECT_LEVEL_UP,
+    EFFECT_ROAR,
+    EquipResult,
+    GameEvent,
+    GameState,
+    MoveResult,
+)
 from game.systems.progression import exp_to_next_level
 from game.ui import font, hud, minimap
+from game.ui.audio import Audio
 from game.ui.camera import camera_origin
 from game.ui.command_bar import COMMANDS, CommandBar, command_label, hit_test
 from game.ui.cooking_cutin import CookingCutin
+from game.ui.effects import EffectLayer
 from game.ui.equipment_view import EquipmentView, EquipRequest
 from game.ui.input import Controls, MoveCommand, TurnCommand
 from game.ui.inventory_view import (
@@ -92,6 +103,7 @@ class DungeonScene:
         save_run: Callable[[GameState], None] | None = None,
         cooking_palette: list[int] | None = None,
         cutin_backgrounds: dict[str, pyxel.Image] | None = None,
+        audio: Audio | None = None,
     ) -> None:
         self.state = state
         self.sprites = sprites
@@ -112,6 +124,8 @@ class DungeonScene:
             state, state.params.cooking.cutin, cooking_palette or [], cutin_backgrounds
         )
         self.notebook_view = NotebookView(state.catalog, state.notebook)
+        self.audio = audio
+        self.effects = EffectLayer()
         # 対象の選択を待っているアイテム（"item"）またはスキル（"skill"）
         self.pending_target: tuple[str, ItemInstance | str] | None = None
         self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
@@ -154,17 +168,34 @@ class DungeonScene:
         # 敵を見つけた・ダメージを受けたなどで、押しっぱなしの連続移動を止める
         if self.state.consume_interrupt():
             self.controls.interrupt_repeat()
-        if EFFECT_CURSE in self.state.consume_effects():
-            self.curse_flash_frames = CURSE_FLASH_FRAMES
+        self.effects.update()
+        for event in self.state.consume_events():
+            self._handle_event(event)
         if self.state.floor.number != self._last_floor:
             self._last_floor = self.state.floor.number
             self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
+            if self.audio is not None:
+                self.audio.play_bgm(self.state.area.id)
             if self.save_run is not None:
                 self.save_run(self.state)  # 階を移ったら中断データを保存する（仕様書 13章）
 
         if self.state.run_over:
-            return self.finish_run(self.state, self.state.returned)
+            # クリアも生還と同じ扱い（所持品と所持金を持ち帰る）
+            return self.finish_run(self.state, self.state.returned or self.state.cleared)
         return None
+
+    def _handle_event(self, event: GameEvent) -> None:
+        """ゲーム側の出来事を、効果音と画面の演出にする（仕様書 14章）。"""
+        if self.audio is not None:
+            self.audio.play_se(event.kind)
+        if event.kind == EFFECT_CURSE:
+            self.curse_flash_frames = CURSE_FLASH_FRAMES
+        elif event.kind == EFFECT_ROAR:
+            self.effects.add_shake()
+        elif event.kind == EFFECT_HIT and event.x >= 0:
+            self.effects.add_damage(event.x, event.y, event.value, on_player=event.on_player)
+        elif event.kind == EFFECT_LEVEL_UP and event.x >= 0:
+            self.effects.add_sparkle(event.x, event.y)
 
     def _update_explore(self, direction_command: MoveCommand | TurnCommand | None) -> None:
         c = self.controls
@@ -421,8 +452,10 @@ class DungeonScene:
         fire_frame = pyxel.frame_count // 5
         traps = {trap.pos: trap for trap in floor.traps if trap.discovered}
 
+        shake_x, shake_y = self.effects.offset
+
         def screen_pos(x: int, y: int) -> tuple[int, int]:
-            return (x - cam_x) * ts, config.MAP_TOP + (y - cam_y) * ts
+            return (x - cam_x) * ts + shake_x, config.MAP_TOP + (y - cam_y) * ts + shake_y
 
         def visible(pos: tuple[int, int]) -> bool:
             return fog.state(*pos) == Visibility.VISIBLE
@@ -460,8 +493,15 @@ class DungeonScene:
                 self.sprites.draw(chest.sprite_name, *screen_pos(*chest.pos))
         for monster in floor.monsters:
             if visible(monster.pos):
-                self.sprites.draw(monster.sprite_name, *screen_pos(*monster.pos), frame)
-        self.sprites.draw(player.sprite_name, *screen_pos(player.x, player.y), frame)
+                sx, sy = screen_pos(*monster.pos)
+                self.sprites.draw(monster.sprite_name, sx, sy, frame, offset=True)
+                if self.effects.is_flashing(*monster.pos):
+                    self.effects.draw_flash(sx, sy)
+        px, py = screen_pos(player.x, player.y)
+        self.sprites.draw(player.sprite_name, px, py, frame)
+        if self.effects.is_flashing(player.x, player.y):
+            self.effects.draw_flash(px, py)
+        self.effects.draw(screen_pos)
         pyxel.clip()
 
     def _draw_curse_flash(self) -> None:

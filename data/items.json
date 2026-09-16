@@ -7,7 +7,7 @@
      "description": "MPを15回復する。", "effects": [{"type": "restore_mp", "value": 15}]},
     {"id": "antidote", "name": "毒消し草", "category": "herb", "sprite": "item_antidote", "price": 40, "spawn_weight": 10,
      "description": "毒・混乱・盲目を治す。", "effects": [{"type": "cure", "statuses": ["poison", "confusion", "blind"]}]},
-    {"id": "ration", "name": "保存食", "category": "food", "sprite": "item_ration", "price": 60, "spawn_weight": 12,
+    {"id": "ration", "name": "保存食", "category": "food", "sprite": "item_ration", "price": 60, "spawn_weight": 18,
      "description": "満腹度を50回復する。", "effects": [{"type": "satiety", "value": 50}]},
     {"id": "stove", "name": "携帯コンロ", "category": "tool", "sprite": "item_stove", "price": 150, "spawn_weight": 3, "charges": 3,
      "description": "焚き火がなくても料理できる。3回使うと壊れる。視界に敵がいるときは使えない。"},

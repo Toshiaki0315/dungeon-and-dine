@@ -45,10 +45,17 @@ class SpriteSheet:
         y: int,
         frame: int = 0,
         colkey: int | None = config.TRANSPARENT_COLOR,
+        offset: bool = False,
     ) -> None:
-        """スプライトを描く。frame はフレーム数で割った余りを使う（横に並んだ次のコマ）。"""
+        """スプライトを描く。frame はフレーム数で割った余りを使う（横に並んだ次のコマ）。
+
+        offset を True にすると、8×8 より大きい素材（ボス）をマスの中央に寄せて描く。
+        """
         sprite = self._defs[name]
         u = sprite.u + (frame % sprite.frames) * sprite.w
+        if offset:
+            x -= (sprite.w - config.TILE_SIZE) // 2
+            y -= (sprite.h - config.TILE_SIZE) // 2
         if colkey is None:
             pyxel.blt(x, y, sprite.bank, u, sprite.v, sprite.w, sprite.h)
         else:

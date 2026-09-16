@@ -28,7 +28,14 @@ from game.entities.item import (
     ItemInstance,
     WeaponStats,
 )
-from game.entities.monster import ABILITY_ON_HIT_STATUS, AI_AMBUSH, MODE_CHASE, Ability, Monster
+from game.entities.monster import (
+    ABILITY_ON_HIT_STATUS,
+    AI_AMBUSH,
+    AI_BOSS,
+    MODE_CHASE,
+    Ability,
+    Monster,
+)
 from game.entities.player import Player, PlayerParams
 from game.rng import weighted_choice
 from game.systems import progression, spawn
@@ -80,7 +87,7 @@ from game.systems.turn import TurnScheduler
 from game.world.direction import Direction, chebyshev
 from game.world.floor import Area, Campfire, Floor, area_for_floor
 from game.world.fov import FogMap, FovParams, Visibility, compute_visible
-from game.world.mapgen import MapGenParams, generate_floor
+from game.world.mapgen import MapGenParams, generate_boss_floor, generate_floor
 from game.world.tiles import Tile
 
 Position = tuple[int, int]
@@ -105,7 +112,29 @@ INFLICT_MESSAGES: dict[str, str] = {
     "mana_drain": "魔力を吸われている！",
 }
 
-EFFECT_CURSE = "curse"  # 呪いが発動した（UI で画面を紫に点滅させる）
+# UI で演出する出来事（効果音・ポップアップ・画面効果）。仕様書 14章
+EFFECT_CURSE = "curse"  # 呪いが発動した（画面を紫に点滅させる）
+EFFECT_ROAR = "roar"  # ボスが咆哮した（画面を揺らす）
+EFFECT_ATTACK = "attack"
+EFFECT_SKILL = "skill"
+EFFECT_HIT = "hit"  # ダメージを受けた（value にダメージ量）
+EFFECT_PICKUP = "pickup"
+EFFECT_COOK = "cook"
+EFFECT_LEVEL_UP = "level_up"
+EFFECT_STAIRS = "stairs"
+EFFECT_DEATH = "death"
+EFFECT_CLEAR = "clear"
+
+
+@dataclass(frozen=True)
+class GameEvent:
+    """UI に伝える出来事。x, y はマップ上の位置（-1 なら位置を持たない）。"""
+
+    kind: str
+    x: int = -1
+    y: int = -1
+    value: int = 0
+    on_player: bool = False
 
 
 @dataclass(frozen=True)
@@ -223,7 +252,8 @@ class GameState:
         self.notebook = notebook if notebook is not None else Notebook()  # ランをまたいで残る
         self.interrupted = False  # 連続移動を止めるべき出来事（敵の発見・被ダメージなど）
         self.returned = False  # 帰還の巻物で生還した
-        self.effects: list[str] = []  # UI で演出する出来事（EFFECT_*）
+        self.cleared = False  # ボスを倒した
+        self.events: list[GameEvent] = []  # UI で演出する出来事（EFFECT_*）
         self._next_uid_value = 0
         self._visible_monster_ids: set[int] = set()
         self._sight: set[Position] = set()  # 敵がプレイヤーに気づける範囲（盲目の影響を受けない）
@@ -247,8 +277,12 @@ class GameState:
 
     @property
     def run_over(self) -> bool:
-        """この挑戦が終わったか（力尽きた、または生還した）。"""
-        return self.is_game_over or self.returned
+        """この挑戦が終わったか（力尽きた、生還した、クリアした）。"""
+        return self.is_game_over or self.returned or self.cleared
+
+    @property
+    def is_boss_floor(self) -> bool:
+        return self.floor.number >= self.params.last_floor
 
     @property
     def uid_counter(self) -> int:
@@ -291,9 +325,13 @@ class GameState:
         self.interrupted = False
         return interrupted
 
-    def consume_effects(self) -> list[str]:
-        effects, self.effects = self.effects, []
-        return effects
+    def consume_events(self) -> list[GameEvent]:
+        events, self.events = self.events, []
+        return events
+
+    def emit(self, kind: str, pos: Position | None = None, value: int = 0, **kwargs: bool) -> None:
+        x, y = pos if pos is not None else (-1, -1)
+        self.events.append(GameEvent(kind, x, y, value, **kwargs))
 
     def take_loadout(self, loadout: Loadout) -> None:
         """拠点に置いてある持ち物と装備を持って、挑戦を始める（仕様書 12.3）。"""
@@ -415,6 +453,7 @@ class GameState:
         if plan.heat == HEAT_STOVE:
             self._use_stove()
 
+        self.emit(EFFECT_COOK)
         self.log.add(f"{p.name}は{names}を料理した。")
         product = ItemInstance(plan.product)
         if plan.recipe is not None:
@@ -444,16 +483,21 @@ class GameState:
 
     def enter_floor(self, number: int) -> None:
         floor_rng = rng_module.floor_rng(self.run_seed, number)
-        self.floor = generate_floor(floor_rng, number, self.params.mapgen)
-        spawn.populate_floor(
-            self.floor,
-            floor_rng,
-            self.catalog,
-            self.params.spawn,
-            self.params.equipment,
-            self._next_uid,
-            cooking=self.params.cooking,
-        )
+        if number >= self.params.last_floor:
+            # B20F は固定レイアウトのボス階（仕様書 5.3 / 8.3）
+            self.floor = generate_boss_floor(number, self.params.mapgen)
+            spawn.populate_boss_floor(self.floor, self.catalog, self._next_uid)
+        else:
+            self.floor = generate_floor(floor_rng, number, self.params.mapgen)
+            spawn.populate_floor(
+                self.floor,
+                floor_rng,
+                self.catalog,
+                self.params.spawn,
+                self.params.equipment,
+                self._next_uid,
+                cooking=self.params.cooking,
+            )
         self.area = area_for_floor(self.params.areas, number)
         self.fog = FogMap(self.floor.width, self.floor.height)
         self.player.x, self.player.y = self.floor.start
@@ -580,6 +624,7 @@ class GameState:
                 return False
 
         p.mp -= skill.mp
+        self.emit(EFFECT_SKILL)
         self.log.add(f"{p.name}は「{skill.name}」を使った！")
         if skill.type == SKILL_ATTACK:
             if "confusion" in p.statuses:
@@ -707,7 +752,7 @@ class GameState:
             self.log.add(
                 f"{highlight(item.name)}は呪われていた！ 「{item.curse.name}」の呪いがかかった。"
             )
-            self.effects.append(EFFECT_CURSE)
+            self.emit(EFFECT_CURSE)
             self.interrupted = True
         self._end_player_action()
         return EquipResult.EQUIPPED
@@ -798,6 +843,23 @@ class GameState:
         if not self.is_game_over:
             self._wake_player()
 
+    def monster_roar(self, monster: Monster, ability: Ability) -> None:
+        """ボスの咆哮。周囲のプレイヤーを鈍足にする（仕様書 8.3）。"""
+        self.log.add(f"{monster.name}が咆哮した！")
+        self.emit(EFFECT_ROAR)
+        self.interrupted = True
+        if ability.status is not None and chebyshev(monster.pos, self.player.pos) <= ability.range:
+            self._inflict_player(ability.status, ability.chance)
+
+    def monster_devour(self, monster: Monster, ability: Ability) -> None:
+        """ボスの捕食。満腹度を奪い、そのぶん自分の HP を回復する（仕様書 8.3）。"""
+        p = self.player
+        amount = min(p.satiety, ability.value)
+        p.satiety -= amount
+        monster.hp = min(monster.max_hp, monster.hp + amount)
+        self.log.add(f"{monster.name}は{p.name}に喰らいついた！ 満腹度を{amount}奪われた。")
+        self.interrupted = True
+
     def reveal_monster(self, monster: Monster) -> None:
         self._reveal_if_disguised(monster)
 
@@ -811,6 +873,7 @@ class GameState:
 
     def _attack_forward(self) -> None:
         p = self.player
+        self.emit(EFFECT_ATTACK)
         weapon = self.effective_weapon()
         cells = reach_cells(self.floor, p.x, p.y, p.facing, weapon.reach, weapon.length)
         targets = self._monsters_in(cells, first_only=weapon.reach == REACH_LINE)
@@ -871,6 +934,7 @@ class GameState:
         cause: KillCause | None = None,
     ) -> None:
         monster.hp -= damage
+        self.emit(EFFECT_HIT, monster.pos, damage)
         prefix = "会心の一撃！ " if critical else ""
         self.log.add(f"{prefix}{monster.name}に{damage}のダメージ。")
         if monster.hp <= 0:
@@ -888,10 +952,17 @@ class GameState:
             self.floor.monsters.remove(monster)
         exp = monster.definition.exp
         self.log.add(f"{monster.name}を倒した！ {exp}の経験値を得た。")
+        level_before = self.player.level
         for message in progression.gain_exp(
             self.player, exp, self.params.progression, self.catalog.skills
         ):
             self.log.add(message)
+        if self.player.level > level_before:
+            self.emit(EFFECT_LEVEL_UP, self.player.pos)
+        if monster.definition.ai == AI_BOSS:
+            self.cleared = True
+            self.emit(EFFECT_CLEAR)
+            self.log.add(f"{monster.name}を倒した！ 迷宮の主は崩れ落ちた。")
         if monster.definition.ai == AI_AMBUSH:
             # ミミックは宝箱の中身を落とす
             contents = spawn.chest_contents(
@@ -1141,9 +1212,11 @@ class GameState:
         if item.id == GOLD_ID:
             p.gold += item.count
             self.floor.items.remove(floor_item)
+            self.emit(EFFECT_PICKUP, p.pos)
             self.log.add(f"{item.count}Gを拾った。")
         elif self.inventory.add(item):
             self.floor.items.remove(floor_item)
+            self.emit(EFFECT_PICKUP, p.pos)
             self.log.add(f"{highlight(name)}を拾った。")
         else:
             self.log.add(f"持ちきれない。{highlight(name)}を拾えなかった。")
@@ -1270,6 +1343,7 @@ class GameState:
             self.log.add(f"{self.player.name}は目を覚ました。")
 
     def _damage_player(self, amount: int) -> None:
+        self.emit(EFFECT_HIT, self.player.pos, amount, on_player=True)
         self.player.hp = max(0, self.player.hp - amount)
         self.interrupted = True
         self._log_death_once()
@@ -1277,10 +1351,12 @@ class GameState:
     def _log_death_once(self) -> None:
         if self.is_game_over and not self._death_logged:
             self._death_logged = True
+            self.emit(EFFECT_DEATH)
             self.log.add(f"{self.player.name}は力尽きた……")
 
     def _go_down(self) -> None:
         p = self.player
+        self.emit(EFFECT_STAIRS)
         removed = p.statuses.clear_until_floor_change()
         if "max_hp_down" in removed:
             p.max_hp += removed["max_hp_down"] * self.catalog.statuses["max_hp_down"].value
@@ -1369,7 +1445,7 @@ class GameState:
                 self.floor.campfires.remove(campfire)
                 self.log.add("焚き火が消えた。")
 
-        if turn % self.params.spawn.respawn_interval == 0:
+        if not self.is_boss_floor and turn % self.params.spawn.respawn_interval == 0:
             spawn.respawn_monster(
                 self.floor,
                 self.rng,

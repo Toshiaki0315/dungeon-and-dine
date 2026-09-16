@@ -26,6 +26,8 @@ if TYPE_CHECKING:
 
 Position = tuple[int, int]
 
+BOSS_ID = "devourer"  # B20F のボス（仕様書 8.3）
+
 CHEST_EQUIPMENT = "equipment"
 CHEST_CONSUMABLE = "consumable"
 CHEST_GOLD = "gold"
@@ -160,6 +162,20 @@ def place_campfire(
     campfire = Campfire(*cell)
     floor.campfires.append(campfire)
     return campfire
+
+
+def populate_boss_floor(
+    floor: Floor, catalog: Catalog, next_uid: Callable[[], int]
+) -> Monster | None:
+    """ボス階に、手前の部屋の焚き火と、奥の間のボスを置く（仕様書 5.3 / 8.3）。"""
+    entry, hall = floor.rooms[0], floor.rooms[-1]
+    floor.campfires.append(Campfire(*entry.center))
+    definition = catalog.monsters.get(BOSS_ID)
+    if definition is None:
+        return None
+    boss = Monster.spawn(definition, *hall.center, next_uid())
+    floor.monsters.append(boss)
+    return boss
 
 
 def spawn_monster(

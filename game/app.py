@@ -13,11 +13,13 @@ from game.entities.player import PLAYER_SPRITE_NAMES
 from game.scenes import Scene
 from game.scenes.base_camp import BaseCampScene
 from game.scenes.dungeon import DungeonScene
+from game.scenes.ending import EndingScene
 from game.scenes.game_over import GameOverScene
 from game.scenes.title import TitleScene
 from game.systems import save
 from game.systems.game_state import GameParams, GameState
 from game.ui import font
+from game.ui.audio import Audio
 from game.ui.input import Controls
 from game.ui.sprites import SpriteSheet
 from game.world.tiles import CAMPFIRE_SPRITE, SAFE_FLOOR_SPRITE, SPRITE_NAMES
@@ -62,6 +64,7 @@ class App:
 
         self.sprites = SpriteSheet(sprite_defs)
         self.cutin_backgrounds = _load_cutin_backgrounds()
+        self.audio = Audio(self.data["sounds"])
         self.controls = Controls(float(self.data["balance"]["input"]["repeat_interval_sec"]))
 
         # セーブデータ（保存先は OS ごとのユーザーデータフォルダ。仕様書 13章）
@@ -76,6 +79,7 @@ class App:
     # --- シーンの生成と遷移（仕様書 4章） ---
 
     def title(self) -> Scene:
+        self.audio.play_bgm("title")
         return TitleScene(
             controls=self.controls,
             sprites=self.sprites,
@@ -87,6 +91,7 @@ class App:
         )
 
     def base_camp(self, message: str = "") -> Scene:
+        self.audio.play_bgm("camp")
         return BaseCampScene(
             controls=self.controls,
             sprites=self.sprites,
@@ -121,6 +126,7 @@ class App:
 
     def dungeon(self, state: GameState, *, autosave: bool) -> Scene:
         self.run_state = state
+        self.audio.play_bgm(state.area.id)
         if autosave:
             self.autosave(state)
         return DungeonScene(
@@ -132,10 +138,13 @@ class App:
             save_run=self.autosave,
             cooking_palette=self.cooking_palette,
             cutin_backgrounds=self.cutin_backgrounds,
+            audio=self.audio,
         )
 
     def finish_run(self, state: GameState, survived: bool) -> Scene:
         """挑戦の終わり（死亡・生還）。引き継ぎを行い、中断データを消す（仕様書 12.3）。"""
+        if state.cleared:
+            self.meta.clears += 1
         self.meta.finish_run(
             survived=survived,
             items=list(state.inventory.items),
@@ -146,6 +155,16 @@ class App:
         self.run_state = None
         save.delete_run(self.save_dir)
         self.save_meta()
+        if state.cleared:
+            return EndingScene(
+                player_name=state.player.name,
+                turn=state.turn,
+                level=state.player.level,
+                clears=self.meta.clears,
+                controls=self.controls,
+                sprites=self.sprites,
+                to_camp=self.base_camp,
+            )
         if survived:
             return self.base_camp(f"{state.player.name}は {state.player.gold}G を持ち帰った。")
         return GameOverScene(

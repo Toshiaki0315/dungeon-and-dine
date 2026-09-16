@@ -276,6 +276,46 @@ TEMPLATES: dict[str, list[str]] = {
     ],
 }
 
+# ボス「奈落の大喰らい」（16×16、2コマ）。仕様書 2.3.1 / 8.3
+BOSS: list[Pixels] = [
+    [
+        "0000888888880000",
+        "0008888888888000",
+        "0088822222288800",
+        "0888222222228880",
+        "8822aa2222aa2288",
+        "8822aa2222aa2288",
+        "8822222222222288",
+        "8821111111111288",
+        "8217777777777128",
+        "8211111111111128",
+        "8821777777771288",
+        "8882111111112888",
+        "0888222222228880",
+        "0088882222888800",
+        "0008888888888000",
+        "0000888888880000",
+    ],
+    [
+        "0000888888880000",
+        "0008888888888000",
+        "0088822222288800",
+        "0888222222228880",
+        "882aaa2222aaa288",
+        "882aaa2222aaa288",
+        "8822222222222288",
+        "8811111111111188",
+        "8177777777777718",
+        "8111111111111118",
+        "8811777777771188",
+        "8811111111111188",
+        "0888222222228880",
+        "0088882222888800",
+        "0008888888888000",
+        "0000888888880000",
+    ],
+]
+
 # 敵ID → (テンプレート, 体, 目や模様, 影)。同じ階に出る敵どうしは色か形で見分けられるようにする。
 MONSTERS: dict[str, tuple[str, int, int, int]] = {
     "slime": ("blob", 11, 1, 3),
@@ -666,6 +706,27 @@ TRAPS: dict[str, Pixels] = {
 }
 
 
+def recolor(pixels: Pixels, mapping: dict[str, int]) -> Pixels:
+    table = {key: f"{value:x}" for key, value in mapping.items()}
+    return ["".join(table.get(c, c) for c in row) for row in pixels]
+
+
+def area_tiles() -> dict[str, list[Pixels]]:
+    """floors.json のエリアごとの色で、床・壁・通路の色違いを作る（仕様書 5.6）。"""
+    data = json.loads((config.DATA_DIR / "floors.json").read_text(encoding="utf-8"))
+    result: dict[str, list[Pixels]] = {}
+    for area in data["areas"]:
+        tiles = area.get("tiles")
+        if not tiles:
+            continue
+        ground = {"1": tiles["floor"], "5": tiles["floor_dot"]}
+        wall = {"5": tiles["wall"], "1": tiles["wall_mortar"]}
+        result[f"floor_{area['id']}"] = [recolor(FLOOR, ground)]
+        result[f"corridor_{area['id']}"] = [recolor(CORRIDOR, ground)]
+        result[f"wall_{area['id']}"] = [recolor(WALL, wall)]
+    return result
+
+
 def paint(template: str, body: int, accent: int, dark: int) -> Pixels:
     table = {".": "0", "B": f"{body:x}", "A": f"{accent:x}", "D": f"{dark:x}"}
     return ["".join(table[c] for c in row) for row in TEMPLATES[template]]
@@ -712,6 +773,7 @@ def build_sheet() -> list[dict[str, list[Pixels]]]:
         {**monsters, **chests},
         items,
         {name: [pixels] for name, pixels in TRAPS.items()},
+        area_tiles(),
     ]
 
 
@@ -733,6 +795,20 @@ def main() -> None:
             sprites[name] = {"u": u, "v": v, "frames": len(frames)}
             u += len(frames) * size
         assert u <= image.width, f"{row} 行目が画像の幅を超えています"
+
+    # ボスだけは 16×16 なので、8×8 の行の下に置く
+    boss_v = len(build_sheet()) * size
+    boss_size = len(BOSS[0])
+    for i, pixels in enumerate(BOSS):
+        assert len(pixels) == boss_size and all(len(line) == boss_size for line in pixels)
+        image.set(i * boss_size, boss_v, pixels)
+    sprites["devourer"] = {
+        "u": 0,
+        "v": boss_v,
+        "w": boss_size,
+        "h": boss_size,
+        "frames": len(BOSS),
+    }
 
     config.RESOURCE_PATH.parent.mkdir(parents=True, exist_ok=True)
     pyxel.save(str(config.RESOURCE_PATH))

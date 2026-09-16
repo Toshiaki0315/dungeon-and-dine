@@ -284,6 +284,7 @@ def monster_to_dict(monster: Monster) -> dict[str, Any]:
         "mode": monster.mode,
         "target": list(monster.target) if monster.target is not None else None,
         "disguised": monster.disguised,
+        "turns_acted": monster.turns_acted,
         "statuses": monster.statuses.snapshot(),
     }
 
@@ -302,6 +303,7 @@ def monster_from_dict(data: Mapping[str, Any], catalog: Catalog) -> Monster:
         mode=str(data["mode"]),
         target=(int(target[0]), int(target[1])) if target is not None else None,
         disguised=bool(data["disguised"]),
+        turns_acted=int(data.get("turns_acted", 0)),
     )
     monster.statuses.restore(data["statuses"])
     return monster
