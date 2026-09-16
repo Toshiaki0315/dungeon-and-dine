@@ -19,6 +19,7 @@ from game.systems.progression import exp_to_next_level
 from game.ui import font, hud, minimap
 from game.ui.camera import camera_origin
 from game.ui.command_bar import COMMANDS, CommandBar, command_label, hit_test
+from game.ui.cooking_cutin import CookingCutin
 from game.ui.equipment_view import EquipmentView, EquipRequest
 from game.ui.input import Controls, MoveCommand, TurnCommand
 from game.ui.inventory_view import (
@@ -32,11 +33,12 @@ from game.ui.inventory_view import (
 )
 from game.ui.log import LogHistoryView, draw_recent
 from game.ui.menu import ConfirmDialog
+from game.ui.notebook_view import NotebookView
 from game.ui.skill_view import SkillView
 from game.ui.sprites import SpriteSheet
 from game.world.direction import Direction
 from game.world.fov import Visibility
-from game.world.tiles import SPRITE_NAMES, Tile
+from game.world.tiles import CAMPFIRE_SPRITE, SAFE_FLOOR_SPRITE, SPRITE_NAMES, Tile
 
 FLOOR_BANNER_SECONDS = 2
 CURSE_FLASH_FRAMES = config.FPS
@@ -72,6 +74,8 @@ class Mode(Enum):
     INVENTORY = auto()  # 対象の選択（ITEM の対象・目利き）もこの画面で行う
     EQUIPMENT = auto()
     SKILL_MENU = auto()
+    COOKING_CUTIN = auto()  # 食材選択 → 調理演出 → 結果表示（仕様書 9.3）
+    NOTEBOOK = auto()
     FULL_MAP = auto()
     CONFIRM = auto()
     LOG_HISTORY = auto()
@@ -86,6 +90,8 @@ class DungeonScene:
         controls: Controls,
         debug: bool,
         new_run: Callable[[], Scene],
+        cooking_palette: list[int] | None = None,
+        cutin_backgrounds: dict[str, pyxel.Image] | None = None,
     ) -> None:
         self.state = state
         self.sprites = sprites
@@ -101,6 +107,10 @@ class DungeonScene:
         self.inventory_view = InventoryView(state.inventory, state.player.is_equipped)
         self.equipment_view = EquipmentView(state)
         self.skill_view = SkillView()
+        self.cutin = CookingCutin(
+            state, state.params.cooking.cutin, cooking_palette or [], cutin_backgrounds
+        )
+        self.notebook_view = NotebookView(state)
         # 対象の選択を待っているアイテム（"item"）またはスキル（"skill"）
         self.pending_target: tuple[str, ItemInstance | str] | None = None
         self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
@@ -129,6 +139,10 @@ class DungeonScene:
             self._update_equipment()
         elif self.mode == Mode.SKILL_MENU:
             self._update_skill_menu()
+        elif self.mode == Mode.COOKING_CUTIN:
+            self._update_cutin()
+        elif self.mode == Mode.NOTEBOOK and self.notebook_view.update(self.controls):
+            self.mode = Mode.EXPLORE
         elif self.mode == Mode.FULL_MAP:
             self._close_on("map")
         elif self.mode == Mode.CONFIRM:
@@ -169,7 +183,8 @@ class DungeonScene:
             self.mode = Mode.LOG_HISTORY
             return
         if c.triggered("notebook"):
-            self.state.log.add("レシピ手帳は未実装です。")
+            self.notebook_view.open()
+            self.mode = Mode.NOTEBOOK
             return
         if c.triggered("confirm"):
             if c.pressed("diagonal_modifier"):
@@ -255,6 +270,13 @@ class DungeonScene:
             if current is not None:
                 self.state.unequip(current)
 
+    def _update_cutin(self) -> None:
+        plan = self.cutin.update(self.controls)
+        if plan is not None:
+            self.state.apply_cooking(plan)  # 段階5: ここで1ターン経過する
+        if not self.cutin.active:
+            self.mode = Mode.EXPLORE
+
     def _update_skill_menu(self) -> None:
         result = self.skill_view.update(self.controls)
         if result is True:
@@ -331,8 +353,12 @@ class DungeonScene:
             self.mode = Mode.SKILL_MENU
         elif command_id == "map":
             self.mode = Mode.FULL_MAP
-        elif command_id == "cook" and not self.state.can_cook:
-            self.state.log.add("焚き火のそばか、携帯コンロがないと料理できない。")
+        elif command_id == "cook":
+            if self.state.can_cook:
+                self.cutin.open()
+                self.mode = Mode.COOKING_CUTIN
+            else:
+                self.state.log.add(self.state.cooking_unavailable_reason())
         else:
             self.state.log.add(f"「{command_label(command_id)}」は未実装です。")
 
@@ -349,6 +375,9 @@ class DungeonScene:
 
     def draw(self) -> None:
         pyxel.cls(0)
+        if self.mode == Mode.COOKING_CUTIN and self.cutin.shows_cutin:
+            self.cutin.draw()
+            return
         if self.mode == Mode.FULL_MAP:
             minimap.draw_full_map(
                 self.state.floor, self.state.fog, self.state.player.pos, self._floor_label()
@@ -376,8 +405,12 @@ class DungeonScene:
             self.equipment_view.draw()
         elif self.mode == Mode.SKILL_MENU:
             self.skill_view.draw(player.mp)
+        elif self.mode == Mode.NOTEBOOK:
+            self.notebook_view.draw()
         elif self.mode == Mode.CONFIRM and self.dialog is not None:
             self.dialog.draw()
+        if self.mode == Mode.COOKING_CUTIN:
+            self.cutin.draw_overlay()  # ワイプの途中（探索画面側）
 
     def _floor_label(self) -> str:
         return f"B{self.state.floor.number}F {self.state.area.name}"
@@ -388,6 +421,7 @@ class DungeonScene:
         view_w, view_h = config.MAP_VIEW_TILES_W, config.MAP_VIEW_TILES_H
         cam_x, cam_y = camera_origin(player.x, player.y, floor.width, floor.height, view_w, view_h)
         frame = pyxel.frame_count // config.ANIMATION_TICKS
+        fire_frame = pyxel.frame_count // 5
         traps = {trap.pos: trap for trap in floor.traps if trap.discovered}
 
         def screen_pos(x: int, y: int) -> tuple[int, int]:
@@ -412,10 +446,12 @@ class DungeonScene:
                     if tile == Tile.WALL and not floor.is_edge_wall(mx, my):
                         continue
                     sx, sy = screen_pos(mx, my)
-                    self.sprites.draw(self._tile_sprite(tile), sx, sy, frame, colkey=None)
+                    self.sprites.draw(self._tile_sprite(tile, mx, my), sx, sy, frame, colkey=None)
                     trap = traps.get((mx, my))
                     if trap is not None:
                         self.sprites.draw(trap.definition.sprite, sx, sy)
+                    if floor.campfire_at(mx, my) is not None:
+                        self.sprites.draw(CAMPFIRE_SPRITE, sx, sy, fire_frame)
             pyxel.pal()
 
         # アイテム・宝箱・敵は視界内のものだけを描く（仕様書 5.4。ミミックと宝箱を見分けさせない）
@@ -439,8 +475,10 @@ class DungeonScene:
         pyxel.rect(0, config.MAP_TOP, config.SCREEN_WIDTH, config.MAP_VIEW_HEIGHT, COLOR_CURSE)
         pyxel.dither(1.0)
 
-    def _tile_sprite(self, tile: Tile) -> str:
+    def _tile_sprite(self, tile: Tile, x: int, y: int) -> str:
         """エリア別の素材（例: wall_moss）があればそれを、なければ共通の素材を使う。"""
+        if tile in (Tile.FLOOR, Tile.CORRIDOR) and self.state.floor.in_safe_zone(x, y):
+            return SAFE_FLOOR_SPRITE  # 焚き火の周囲（安全地帯）の床
         base = SPRITE_NAMES[tile]
         area_specific = f"{base}_{self.state.area.id}"
         return area_specific if self.sprites.has(area_specific) else base

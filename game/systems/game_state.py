@@ -8,20 +8,23 @@ from __future__ import annotations
 
 import math
 import random
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
 from enum import Enum, auto
 from typing import Any
 
 from game import rng as rng_module
+from game.data_loader import DataValidationError
 from game.entities import ai
 from game.entities.ai import AIParams
 from game.entities.item import (
     CATEGORY_AMMO,
     GOLD_ID,
+    MYSTERY_FOOD_ID,
     Chest,
     Effect,
     FloorItem,
+    ItemDef,
     ItemInstance,
     WeaponStats,
 )
@@ -31,6 +34,20 @@ from game.rng import weighted_choice
 from game.systems import progression, spawn
 from game.systems.catalog import Catalog
 from game.systems.combat import REACH_LINE, CombatParams, CombatStats, reach_cells, roll_attack
+from game.systems.cooking import (
+    HEAT_CAMPFIRE,
+    HEAT_STOVE,
+    MAX_MATERIALS,
+    MIN_MATERIALS,
+    CookingParams,
+    CookingPreview,
+    Notebook,
+    Recipe,
+    combination_key,
+    ingredient_drop_chance,
+    match_recipe,
+)
+from game.systems.cooking import preview as cooking_preview
 from game.systems.equipment import EquipmentBonus, EquipmentParams, compute_bonus
 from game.systems.inventory import Inventory
 from game.systems.message_log import MessageLog, highlight
@@ -38,6 +55,7 @@ from game.systems.progression import ProgressionParams, SurvivalParams
 from game.systems.skills import (
     SKILL_APPRAISE,
     SKILL_ATTACK,
+    SKILL_CAMPFIRE,
     SKILL_STEALTH,
     SkillDef,
     skills_up_to_level,
@@ -59,7 +77,7 @@ from game.systems.traps import (
 )
 from game.systems.turn import TurnScheduler
 from game.world.direction import Direction, chebyshev
-from game.world.floor import Area, Floor, area_for_floor
+from game.world.floor import Area, Campfire, Floor, area_for_floor
 from game.world.fov import FogMap, FovParams, Visibility, compute_visible
 from game.world.mapgen import MapGenParams, generate_floor
 from game.world.tiles import Tile
@@ -68,8 +86,12 @@ Position = tuple[int, int]
 
 # 実装済みの消費アイテムの効果（それ以外は「未実装」と表示して使わない）
 IMPLEMENTED_EFFECTS = frozenset(
-    {"heal", "restore_mp", "cure", "satiety", "fire_blast", "identify", "holy_water", "uncurse_all"}
-)
+    {
+        "heal", "restore_mp", "restore_mp_full", "cure", "satiety", "inflict", "status",
+        "max_hp_up", "mystery_penalty", "recipe_memo", "fire_blast", "identify", "holy_water",
+        "uncurse_all",
+    }
+)  # fmt: skip
 
 # 状態異常にかかったときのログ（ない場合は「〇〇状態になった」）
 INFLICT_MESSAGES: dict[str, str] = {
@@ -99,6 +121,7 @@ class GameParams:
     ai: AIParams
     traps: TrapParams
     equipment: EquipmentParams
+    cooking: CookingParams
     fov: FovParams
     inventory_capacity: int
     inventory_stack_max: int
@@ -107,8 +130,15 @@ class GameParams:
     @classmethod
     def from_data(cls, data: Mapping[str, Mapping[str, Any]]) -> GameParams:
         balance = data["balance"]
+        catalog = Catalog.from_data(data)
+        cooking = CookingParams.from_dict(balance["cooking"])
+        unknown = [
+            s for e in cooking.mystery_penalties for s in e.statuses if s not in catalog.statuses
+        ]
+        if unknown:
+            raise DataValidationError(f"cooking: 状態異常がありません: {', '.join(unknown)}")
         return cls(
-            catalog=Catalog.from_data(data),
+            catalog=catalog,
             mapgen=MapGenParams.from_dict(balance["mapgen"]),
             player=PlayerParams.from_dict(balance["player"]),
             survival=SurvivalParams.from_dict(balance["survival"]),
@@ -118,6 +148,7 @@ class GameParams:
             ai=AIParams.from_dict(balance["ai"]),
             traps=TrapParams.from_dict(balance["traps"]),
             equipment=EquipmentParams.from_dict(balance["equipment"]),
+            cooking=cooking,
             fov=FovParams.from_dict(balance["fov"]),
             inventory_capacity=int(balance["inventory"]["capacity"]),
             inventory_stack_max=int(balance["inventory"]["stack_max"]),
@@ -144,8 +175,32 @@ class EquipResult(Enum):
     FAILED = auto()
 
 
+@dataclass(frozen=True)
+class KillCause:
+    """敵を倒した手段。食材のドロップに影響する（仕様書 9.1）。"""
+
+    drop_multiplier: float = 1.0  # ナイフで 1.5
+    guaranteed_drop: bool = False  # 「解体術」
+    fire: bool = False  # 炎属性（火炎の巻物、炎の印）なら焼き〇〇になる
+
+
+@dataclass(frozen=True)
+class CookPlan:
+    """調理の結果。カットインで材料を選び終えた時点で決め、画面を戻すときに反映する。"""
+
+    materials: tuple[ItemInstance, ...]
+    heat: str  # HEAT_CAMPFIRE / HEAT_STOVE
+    matched: Recipe | None  # 材料に一致したレシピ
+    success: bool  # False なら謎の物体になる
+    product: ItemDef
+
+    @property
+    def recipe(self) -> Recipe | None:
+        return self.matched if self.success else None
+
+
 class GameState:
-    def __init__(self, run_seed: int, params: GameParams) -> None:
+    def __init__(self, run_seed: int, params: GameParams, notebook: Notebook | None = None) -> None:
         self.run_seed = run_seed
         self.params = params
         self.catalog = params.catalog
@@ -155,6 +210,7 @@ class GameState:
         self.inventory = Inventory(params.inventory_capacity, params.inventory_stack_max)
         self.scheduler = TurnScheduler()
         self.log = MessageLog()
+        self.notebook = notebook if notebook is not None else Notebook()  # ランをまたいで残る
         self.interrupted = False  # 連続移動を止めるべき出来事（敵の発見・被ダメージなど）
         self.effects: list[str] = []  # UI で演出する出来事（EFFECT_*）
         self._next_uid_value = 0
@@ -192,8 +248,7 @@ class GameState:
 
     @property
     def can_cook(self) -> bool:
-        # 焚き火と携帯コンロはフェーズ5で実装する
-        return False
+        return self.heat_source() is not None
 
     def visible_monsters(self) -> list[Monster]:
         return [m for m in self.floor.monsters if self.fog.state(*m.pos) == Visibility.VISIBLE]
@@ -264,6 +319,82 @@ class GameState:
             return [i for i in self.inventory.items if i.is_equipment and i is not item]
         return None
 
+    # --- 料理（仕様書 9.3） ---
+
+    def heat_source(self) -> str | None:
+        """料理に使える火。焚き火のそばなら焚き火、なければ携帯コンロ（視界に敵がいないとき）。"""
+        if self.floor.in_safe_zone(*self.player.pos):
+            return HEAT_CAMPFIRE
+        if self._usable_stove() is not None and not self._enemy_in_sight():
+            return HEAT_STOVE
+        return None
+
+    def cooking_unavailable_reason(self) -> str:
+        if self._usable_stove() is not None:
+            return "敵がいる。携帯コンロを使っている場合ではない。"
+        return "焚き火のそばか、携帯コンロがないと料理できない。"
+
+    def cooking_candidates(self) -> list[ItemInstance]:
+        """材料にできるアイテム（装備中のものと、火に使う携帯コンロを除く）。"""
+        stove = self._usable_stove() if self.heat_source() == HEAT_STOVE else None
+        return [
+            i for i in self.inventory.items if not self.player.is_equipped(i) and i is not stove
+        ]
+
+    def cooking_preview(self, materials: Sequence[ItemInstance]) -> CookingPreview:
+        definitions = [m.definition for m in materials]
+        return cooking_preview(definitions, self.catalog.recipes.values(), self.notebook)
+
+    def plan_cooking(self, materials: Sequence[ItemInstance]) -> CookPlan | None:
+        """選んだ材料での調理の結果を決める。状態は変えず、ターンも進めない。
+
+        材料が2〜3個でない、材料にできないアイテムを含むなどの場合は None を返す。
+        """
+        heat = self.heat_source()
+        candidates = self.cooking_candidates()
+        if (
+            self.is_game_over
+            or heat is None
+            or not MIN_MATERIALS <= len(materials) <= MAX_MATERIALS
+            or len({id(m) for m in materials}) != len(materials)
+            or any(m not in candidates for m in materials)
+        ):
+            return None
+        recipe = match_recipe([m.definition for m in materials], self.catalog.recipes.values())
+        success = False
+        if recipe is not None:
+            fail_chance = self.params.cooking.fail_chance + self.equipment_bonus().cook_fail_bonus
+            success = self.rng.randrange(100) >= fail_chance
+        product_id = recipe.id if recipe is not None and success else MYSTERY_FOOD_ID
+        return CookPlan(tuple(materials), heat, recipe, success, self.catalog.items[product_id])
+
+    def apply_cooking(self, plan: CookPlan) -> bool:
+        """調理の結果を反映する（1ターン消費）。材料は成否にかかわらず消費する。"""
+        if self.is_game_over or any(m not in self.inventory.items for m in plan.materials):
+            return False
+        p = self.player
+        names = "・".join(highlight(m.definition.name) for m in plan.materials)
+        for material in plan.materials:
+            self.inventory.take_one(material)
+        if plan.heat == HEAT_STOVE:
+            self._use_stove()
+
+        self.log.add(f"{p.name}は{names}を料理した。")
+        product = ItemInstance(plan.product)
+        if plan.recipe is not None:
+            self.log.add(f"{highlight(product.name)}ができた！")
+            if self.notebook.discover(plan.recipe.id):
+                self.log.add("新しいレシピを手帳に書き留めた。")
+        else:
+            self.log.add(f"{highlight(product.name)}ができた……")
+            if plan.matched is None:
+                self.notebook.record_failure(combination_key(m.definition for m in plan.materials))
+        if not self.inventory.add(product):
+            self.log.add(f"持ちきれない。{highlight(product.name)}を足元に置いた。")
+            self._drop_to_floor(product, p.pos)
+        self._end_player_action()
+        return True
+
     def skill_targets(self, skill_id: str) -> list[ItemInstance] | None:
         if self.catalog.skills[skill_id].type != SKILL_APPRAISE:
             return None
@@ -285,6 +416,7 @@ class GameState:
             self.params.spawn,
             self.params.equipment,
             self._next_uid,
+            cooking=self.params.cooking,
         )
         self.area = area_for_floor(self.params.areas, number)
         self.fog = FogMap(self.floor.width, self.floor.height)
@@ -393,7 +525,7 @@ class GameState:
         if self.is_game_over or skill_id not in p.skills:
             return False
         skill = self.catalog.skills[skill_id]
-        if skill.type not in (SKILL_ATTACK, SKILL_STEALTH, SKILL_APPRAISE):
+        if skill.type not in (SKILL_ATTACK, SKILL_STEALTH, SKILL_APPRAISE, SKILL_CAMPFIRE):
             self.log.add(f"「{skill.name}」は未実装です。")
             return False
         if self.equipment_bonus().skill_seal:
@@ -405,6 +537,11 @@ class GameState:
         targets = self.skill_targets(skill_id)
         if targets is not None and target not in targets:
             return False
+        kindle_cell: Position | None = None
+        if skill.type == SKILL_CAMPFIRE:
+            kindle_cell = self._kindle_cell()
+            if kindle_cell is None:
+                return False
 
         p.mp -= skill.mp
         self.log.add(f"{p.name}は「{skill.name}」を使った！")
@@ -415,14 +552,21 @@ class GameState:
             monsters = self._monsters_in(cells, first_only=False)
             if not monsters:
                 self.log.add("しかし、そこには何もいなかった。")
+            cause = self._melee_cause(guaranteed_drop=skill.guaranteed_drop)
             for monster in monsters:
-                self._player_hits(monster, multiplier=skill.multiplier)
+                self._player_hits(monster, multiplier=skill.multiplier, cause=cause)
             if skill.self_damage_ratio > 0:
                 recoil = max(1, math.floor(p.max_hp * skill.self_damage_ratio))
                 self.log.add(f"{p.name}は反動で{recoil}のダメージを受けた。")
                 self._damage_player(recoil)
         elif skill.type == SKILL_STEALTH:
             p.statuses.add(self.catalog.statuses["stealth"], skill.duration)
+        elif skill.type == SKILL_CAMPFIRE:
+            assert kindle_cell is not None
+            expires_at = self.turn + skill.duration
+            self.floor.campfires.append(Campfire(*kindle_cell, expires_at=expires_at))
+            self.floor.kindled = True
+            self.log.add("焚き火を起こした。")
         else:
             assert target is not None
             target.curse_known = True
@@ -566,6 +710,7 @@ class GameState:
             self.floor.is_walkable(x, y)
             and self.floor.monster_at(x, y) is None
             and self.floor.chest_at(x, y) is None
+            and not self.floor.in_safe_zone(x, y)  # 焚き火の周囲には入らない
             and (x, y) != self.player.pos
         )
 
@@ -642,8 +787,9 @@ class GameState:
             weapon.pull_item_range > 0 and self._pull_item(weapon.pull_item_range)
         ):
             self.log.add(f"{p.name}の攻撃は空を切った。")
+        cause = self._melee_cause()
         for monster in targets:
-            self._player_hits(monster)
+            self._player_hits(monster, cause=cause)
         self._end_player_action()
 
     def _monsters_in(self, cells: list[Position], *, first_only: bool) -> list[Monster]:
@@ -656,7 +802,16 @@ class GameState:
                     break
         return targets
 
-    def _player_hits(self, monster: Monster, multiplier: float = 1.0) -> None:
+    def _melee_cause(self, *, guaranteed_drop: bool = False) -> KillCause:
+        return KillCause(
+            drop_multiplier=self.effective_weapon().ingredient_drop_multiplier,
+            guaranteed_drop=guaranteed_drop,
+            fire=self.equipment_bonus().fire_attack,
+        )
+
+    def _player_hits(
+        self, monster: Monster, multiplier: float = 1.0, cause: KillCause | None = None
+    ) -> None:
         self._reveal_if_disguised(monster)
         result = roll_attack(
             self.player_combat_stats(),
@@ -669,14 +824,21 @@ class GameState:
             self.log.add(f"{self.player.name}の攻撃は{monster.name}に当たらなかった。")
             self._alert(monster)
             return
-        self._damage_monster(monster, result.damage, critical=result.critical)
+        self._damage_monster(monster, result.damage, critical=result.critical, cause=cause)
 
-    def _damage_monster(self, monster: Monster, damage: int, *, critical: bool = False) -> None:
+    def _damage_monster(
+        self,
+        monster: Monster,
+        damage: int,
+        *,
+        critical: bool = False,
+        cause: KillCause | None = None,
+    ) -> None:
         monster.hp -= damage
         prefix = "会心の一撃！ " if critical else ""
         self.log.add(f"{prefix}{monster.name}に{damage}のダメージ。")
         if monster.hp <= 0:
-            self._kill_monster(monster)
+            self._kill_monster(monster, cause or KillCause())
         else:
             self._alert(monster)
 
@@ -685,7 +847,7 @@ class GameState:
         monster.mode = MODE_CHASE
         monster.target = self.player.pos
 
-    def _kill_monster(self, monster: Monster) -> None:
+    def _kill_monster(self, monster: Monster, cause: KillCause) -> None:
         if monster in self.floor.monsters:
             self.floor.monsters.remove(monster)
         exp = monster.definition.exp
@@ -701,10 +863,35 @@ class GameState:
             )
             if self._drop_to_floor(contents, monster.pos):
                 self.log.add(f"{monster.name}は{highlight(contents.name)}を落とした。")
-        # 食材のドロップはフェーズ5で実装する
+        self._drop_ingredient(monster, cause)
         if self.rng.randrange(100) < self.params.spawn.monster_gold_drop_chance:
             amount = spawn.gold_amount(self.rng, self.floor.number, self.params.spawn)
             self._drop_to_floor(ItemInstance(self.catalog.items[GOLD_ID], amount), monster.pos)
+
+    def _drop_ingredient(self, monster: Monster, cause: KillCause) -> None:
+        drop_id = monster.definition.drop
+        if drop_id is None:
+            return
+        chance = ingredient_drop_chance(
+            self.params.cooking.drop_chance,
+            cause.drop_multiplier,
+            guaranteed=cause.guaranteed_drop,
+        )
+        if chance < 100 and self.rng.randrange(100) >= chance:
+            return
+        definition = self.catalog.items[drop_id]
+        if cause.fire and definition.grilled_id is not None:
+            definition = self.catalog.items[definition.grilled_id]
+        item = self.new_item(definition)
+        if self._drop_to_floor(item, monster.pos):
+            self.log.add(f"{monster.name}は{highlight(item.name)}を落とした。")
+
+    def new_item(self, definition: ItemDef) -> ItemInstance:
+        """ラン中に手に入るアイテムの個体。生肉はこの時点から腐るまでの時間を数える。"""
+        rot_at = None
+        if definition.rotten_id is not None:
+            rot_at = self.turn + self.params.cooking.rot_turns
+        return ItemInstance(definition, rot_at=rot_at)
 
     def _reveal_if_disguised(self, monster: Monster) -> None:
         if not monster.disguised:
@@ -731,19 +918,49 @@ class GameState:
             before = p.mp
             p.mp = min(p.max_mp, p.mp + effect.value)
             self.log.add(f"MPが{p.mp - before}回復した。")
+        elif effect.type == "restore_mp_full":
+            p.mp = p.max_mp
+            self.log.add("MPが全回復した。")
         elif effect.type == "cure":
-            cured = [self.catalog.statuses[s].name for s in effect.statuses if p.statuses.remove(s)]
+            cured: list[str] = []
+            for status_id in effect.statuses:
+                stacks = p.statuses.stacks(status_id)
+                if not p.statuses.remove(status_id):
+                    continue
+                cured.append(self.catalog.statuses[status_id].name)
+                if status_id == "max_hp_down":
+                    p.max_hp += stacks * self.catalog.statuses[status_id].value
             self.log.add(f"{'・'.join(cured)}が治った。" if cured else "何も起こらなかった。")
             p.speed = speed_for(p.statuses, self.catalog.statuses)
         elif effect.type == "satiety":
-            p.satiety = min(p.max_satiety, p.satiety + effect.value)
-            self.log.add("おなかがふくれた。")
+            p.satiety = max(0, min(p.max_satiety, p.satiety + effect.value))
+            self.log.add("おなかがふくれた。" if effect.value >= 0 else "おなかが減ってしまった。")
+        elif effect.type == "inflict":
+            for status_id in effect.statuses:
+                self._inflict_player(status_id, effect.chance)
+        elif effect.type == "status":
+            for status_id in effect.statuses:
+                definition = self.catalog.statuses[status_id]
+                p.statuses.add(definition)
+                self.log.add(f"{definition.name}の効果がついた。")
+            p.speed = speed_for(p.statuses, self.catalog.statuses)
+            self.update_fov()
+        elif effect.type == "max_hp_up":
+            p.max_hp += effect.value
+            p.hp += effect.value
+            self.log.add(f"最大HPが{effect.value}上がった。")
+        elif effect.type == "mystery_penalty":
+            penalties = self.params.cooking.mystery_penalties
+            if penalties:
+                self._apply_item_effect(self.rng.choice(penalties), None)
+        elif effect.type == "recipe_memo":
+            self._read_memo()
         elif effect.type == "fire_blast":
             self.log.add("炎が巻き起こった！")
             for monster in list(self.floor.monsters):
                 if chebyshev(monster.pos, p.pos) <= effect.radius:
                     self._reveal_if_disguised(monster)
-                    self._damage_monster(monster, effect.value)
+                    self._damage_monster(monster, effect.value, cause=KillCause(fire=True))
         elif effect.type == "identify" and target is not None:
             before = target.name
             target.identified = True
@@ -767,6 +984,58 @@ class GameState:
                 item.curse_known = True
             self.log.add("装備の呪いが解けた。" if cursed else "しかし、何も起こらなかった。")
             self.update_fov()
+
+    def _read_memo(self) -> None:
+        """先人のメモ: 未発見のレシピを1つ手帳に登録する。なければお金をもらう。"""
+        unknown = [
+            r for r in self.catalog.recipes.values() if not self.notebook.is_discovered(r.id)
+        ]
+        if not unknown:
+            self.player.gold += self.params.cooking.memo_gold
+            self.log.add(
+                f"知っているレシピばかりだ。挟まっていた{self.params.cooking.memo_gold}Gを手に入れた。"
+            )
+            return
+        recipe = self.rng.choice(unknown)
+        self.notebook.discover(recipe.id)
+        self.log.add(f"手帳に「{highlight(recipe.name)}」のレシピを書き写した。")
+
+    def _usable_stove(self) -> ItemInstance | None:
+        return next(
+            (i for i in self.inventory.items if i.definition.charges > 0 and (i.charges or 0) > 0),
+            None,
+        )
+
+    def _use_stove(self) -> None:
+        stove = self._usable_stove()
+        if stove is None:
+            return
+        stove.charges = (stove.charges or 0) - 1
+        if stove.charges <= 0:
+            self.inventory.remove(stove)
+            self.log.add(f"{highlight(stove.definition.name)}は壊れてしまった。")
+
+    def _enemy_in_sight(self) -> bool:
+        return any(not m.disguised for m in self.visible_monsters())
+
+    def _kindle_cell(self) -> Position | None:
+        """「火起こし」で焚き火を作るマス（向いている方向の隣）。作れなければログを出して None。"""
+        p, floor = self.player, self.floor
+        if floor.kindled:
+            self.log.add("この階では、もう火を起こせない。")
+            return None
+        cell = (p.x + p.facing.dx, p.y + p.facing.dy)
+        if (
+            not floor.can_move(p.x, p.y, p.facing)
+            or floor.tile_at(*cell) == Tile.STAIRS_DOWN
+            or floor.monster_at(*cell) is not None
+            or floor.chest_at(*cell) is not None
+            or floor.item_at(*cell) is not None
+            or floor.campfire_at(*cell) is not None
+        ):
+            self.log.add("そこには火を起こせない。")
+            return None
+        return cell
 
     def _set_equipment(self, slot: str, item: ItemInstance | None) -> None:
         """部位の装備を差し替え、鎧による最大HPの増減を反映する。"""
@@ -982,6 +1251,26 @@ class GameState:
 
     # --- ターン進行 ---
 
+    def _rot_items(self, turn: int) -> None:
+        """腐る時間になった生肉を、腐った肉に変える（持ち物と、この階の床）。"""
+
+        def rotten(item: ItemInstance) -> ItemInstance | None:
+            rotten_id = item.definition.rotten_id
+            if item.rot_at is None or rotten_id is None or turn < item.rot_at:
+                return None
+            return ItemInstance(self.catalog.items[rotten_id])
+
+        items = self.inventory.items
+        for index, item in enumerate(items):
+            replacement = rotten(item)
+            if replacement is not None:
+                items[index] = replacement
+                self.log.add(f"{highlight(item.name)}が腐ってしまった。")
+        for floor_item in self.floor.items:
+            replacement = rotten(floor_item.item)
+            if replacement is not None:
+                floor_item.item = replacement
+
     def _next_uid(self) -> int:
         self._next_uid_value += 1
         return self._next_uid_value
@@ -1035,6 +1324,11 @@ class GameState:
         p.speed = speed_for(p.statuses, statuses)
         for monster in self.floor.monsters:
             monster.statuses.tick()
+        self._rot_items(turn)
+        for campfire in list(self.floor.campfires):
+            if campfire.expires_at is not None and turn >= campfire.expires_at:
+                self.floor.campfires.remove(campfire)
+                self.log.add("焚き火が消えた。")
 
         if turn % self.params.spawn.respawn_interval == 0:
             spawn.respawn_monster(

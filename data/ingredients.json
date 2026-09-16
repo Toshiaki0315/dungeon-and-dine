@@ -1,4 +1,34 @@
 {
   "version": 1,
-  "ingredients": []
+  "raw_description": "料理の材料になる。そのまま食べると満腹度が10回復するが、30%で毒になる。",
+  "raw_effects": [
+    {"type": "satiety", "value": 10},
+    {"type": "inflict", "statuses": ["poison"], "chance": 30}
+  ],
+  "grilled_description": "炎で焼けた食材。そのまま食べると満腹度が25回復する。腐らない。",
+  "grilled_effects": [
+    {"type": "satiety", "value": 25}
+  ],
+  "rotten": {
+    "id": "rotten_meat", "name": "腐った肉", "sprite": "item_rotten_meat",
+    "description": "腐ってしまった肉。食べると満腹度が5回復するが、毒になる。",
+    "effects": [{"type": "satiety", "value": 5}, {"type": "inflict", "statuses": ["poison"]}]
+  },
+  "ingredients": [
+    {"id": "slime_jelly", "name": "スライムゼリー", "tags": ["ゼリー類"], "sprite": "item_jelly"},
+    {"id": "rat_meat", "name": "ネズミ肉", "tags": ["肉類"], "sprite": "item_meat", "rots": true,
+     "grilled": {"id": "grilled_rat_meat", "name": "焼きネズミ肉"}},
+    {"id": "bat_wing", "name": "コウモリの羽", "tags": ["素材類"], "sprite": "item_wing"},
+    {"id": "glowing_mushroom", "name": "光るキノコ", "tags": ["キノコ類"], "sprite": "item_mushroom", "spawn_weight": 6},
+    {"id": "bone", "name": "骨", "tags": ["素材類"], "sprite": "item_bone"},
+    {"id": "snake_meat", "name": "蛇肉", "tags": ["肉類"], "sprite": "item_meat", "rots": true,
+     "grilled": {"id": "grilled_snake_meat", "name": "焼き蛇肉"}},
+    {"id": "fire_lizard_tail", "name": "火トカゲの尻尾", "tags": ["肉類"], "sprite": "item_meat", "rots": true,
+     "grilled": {"id": "grilled_fire_lizard_tail", "name": "焼き火トカゲの尻尾"}},
+    {"id": "centipede_shell", "name": "ムカデの殻", "tags": ["素材類"], "sprite": "item_shell"},
+    {"id": "rock_salt", "name": "岩塩", "tags": ["調味料"], "sprite": "item_salt"},
+    {"id": "wraith_essence", "name": "亡者の霊液", "tags": ["素材類"], "sprite": "item_essence"},
+    {"id": "hound_meat", "name": "番犬の肉", "tags": ["肉類"], "sprite": "item_meat", "rots": true,
+     "grilled": {"id": "grilled_hound_meat", "name": "焼き番犬の肉"}}
+  ]
 }

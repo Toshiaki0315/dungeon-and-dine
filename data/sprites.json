@@ -23,6 +23,16 @@
       "v": 0,
       "frames": 1
     },
+    "floor_safe": {
+      "u": 32,
+      "v": 0,
+      "frames": 1
+    },
+    "campfire": {
+      "u": 40,
+      "v": 0,
+      "frames": 3
+    },
     "leo_down": {
       "u": 0,
       "v": 8,
@@ -208,8 +218,68 @@
       "v": 24,
       "frames": 1
     },
-    "weapon_katana": {
+    "item_meat": {
       "u": 152,
+      "v": 24,
+      "frames": 1
+    },
+    "item_grilled_meat": {
+      "u": 160,
+      "v": 24,
+      "frames": 1
+    },
+    "item_rotten_meat": {
+      "u": 168,
+      "v": 24,
+      "frames": 1
+    },
+    "item_jelly": {
+      "u": 176,
+      "v": 24,
+      "frames": 1
+    },
+    "item_wing": {
+      "u": 184,
+      "v": 24,
+      "frames": 1
+    },
+    "item_mushroom": {
+      "u": 192,
+      "v": 24,
+      "frames": 1
+    },
+    "item_bone": {
+      "u": 200,
+      "v": 24,
+      "frames": 1
+    },
+    "item_shell": {
+      "u": 208,
+      "v": 24,
+      "frames": 1
+    },
+    "item_salt": {
+      "u": 216,
+      "v": 24,
+      "frames": 1
+    },
+    "item_essence": {
+      "u": 224,
+      "v": 24,
+      "frames": 1
+    },
+    "item_dish": {
+      "u": 232,
+      "v": 24,
+      "frames": 1
+    },
+    "item_mystery": {
+      "u": 240,
+      "v": 24,
+      "frames": 1
+    },
+    "weapon_katana": {
+      "u": 248,
       "v": 24,
       "frames": 1
     },

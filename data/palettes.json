@@ -1,4 +1,11 @@
 {
   "version": 1,
-  "palettes": {}
+  "palettes": {
+    "cooking": [
+      "000000", "1a2418", "2e4a2a", "4f7a3a",
+      "6b3e22", "7a4a2a", "c0c8a0", "f4ecd8",
+      "c8402a", "ff8c1a", "ffd84a", "8fbf5a",
+      "5a6e8a", "9a9080", "e89a70", "a0582a"
+    ]
+  }
 }

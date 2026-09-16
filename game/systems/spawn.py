@@ -1,4 +1,4 @@
-"""敵・アイテム・宝箱・罠の配置。仕様書 5.3 / 11.3 / 12.2。
+"""敵・アイテム・宝箱・罠・焚き火の配置。仕様書 5.3 / 11.3 / 12.2。
 
 pyxel を import しないこと。
 """
@@ -15,9 +15,10 @@ from game.entities.item import GOLD_ID, Chest, FloorItem, ItemDef, ItemInstance
 from game.entities.monster import Monster
 from game.rng import weighted_choice
 from game.systems.combat import round_half_up
+from game.systems.cooking import CookingParams
 from game.systems.equipment import EquipmentParams, generate_equipment
 from game.systems.traps import Trap
-from game.world.floor import Floor
+from game.world.floor import SAFE_ZONE_RADIUS, Campfire, Floor
 from game.world.tiles import Tile
 
 if TYPE_CHECKING:
@@ -67,8 +68,9 @@ def populate_floor(
     params: SpawnParams,
     equipment: EquipmentParams,
     next_uid: Callable[[], int],
+    cooking: CookingParams | None = None,
 ) -> None:
-    """生成したばかりの階に、敵・床アイテム・宝箱・罠を置く。"""
+    """生成したばかりの階に、敵・床アイテム・宝箱・罠・焚き火を置く。"""
     start_room = floor.room_at(*floor.start)
     walkable = [
         (x, y) for y in range(floor.height) for x in range(floor.width) if floor.is_walkable(x, y)
@@ -125,6 +127,40 @@ def populate_floor(
             break
         floor.traps.append(Trap(catalog.traps[trap_id], *cell))
 
+    if cooking is not None:
+        place_campfire(floor, rng, room_cells, cooking)
+
+
+def place_campfire(
+    floor: Floor, rng: random.Random, room_cells: list[Position], params: CookingParams
+) -> Campfire | None:
+    """焚き火を1つ置く。campfire_floors の階には必ず、それ以外は campfire_chance の確率で置く。
+
+    周囲（安全地帯）に敵・宝箱・罠がない部屋の床を選ぶ。
+    """
+    if floor.number not in params.campfire_floors and rng.randrange(100) >= params.campfire_chance:
+        return None
+    r = SAFE_ZONE_RADIUS
+
+    def is_suitable(cell: Position) -> bool:
+        x, y = cell
+        if floor.item_at(x, y) is not None or cell == floor.stairs:
+            return False
+        return all(
+            floor.monster_at(x + dx, y + dy) is None
+            and floor.chest_at(x + dx, y + dy) is None
+            and floor.trap_at(x + dx, y + dy) is None
+            for dy in range(-r, r + 1)
+            for dx in range(-r, r + 1)
+        )
+
+    cell = _pick_free(rng, room_cells, is_suitable)
+    if cell is None:
+        return None
+    campfire = Campfire(*cell)
+    floor.campfires.append(campfire)
+    return campfire
+
 
 def spawn_monster(
     floor: Floor,
@@ -156,6 +192,7 @@ def respawn_monster(
         if floor.is_walkable(x, y)
         and floor.monster_at(x, y) is None
         and floor.chest_at(x, y) is None
+        and not floor.in_safe_zone(x, y)
         and is_allowed((x, y))
     ]
     if not cells:

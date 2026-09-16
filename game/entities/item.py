@@ -1,4 +1,4 @@
-"""アイテムの定義と個体、宝箱。仕様書 10章 / 11章 / 12.2。
+"""アイテムの定義と個体、宝箱。仕様書 9章 / 10章 / 11章 / 12.2。
 
 pyxel を import しないこと。
 """
@@ -12,6 +12,7 @@ from typing import Any
 from game.data_loader import DataValidationError
 
 GOLD_ID = "gold"
+MYSTERY_FOOD_ID = "mystery_food"  # 料理に失敗してできる「謎の物体」
 
 CATEGORY_HERB = "herb"
 CATEGORY_FOOD = "food"
@@ -22,6 +23,13 @@ CATEGORY_MEMO = "memo"
 CATEGORY_GOLD = "gold"
 CATEGORY_WEAPON = "weapon"
 CATEGORY_ARMOR = "armor"
+CATEGORY_INGREDIENT = "ingredient"  # 生の食材
+CATEGORY_COOKED = "cooked"  # 炎で焼けた食材（焼き〇〇）
+CATEGORY_DISH = "dish"  # 料理
+CATEGORY_MYSTERY = "mystery"  # 謎の物体
+EDIBLE_CATEGORIES = frozenset(
+    {CATEGORY_FOOD, CATEGORY_INGREDIENT, CATEGORY_COOKED, CATEGORY_DISH, CATEGORY_MYSTERY}
+)
 
 SLOT_WEAPON = "weapon"
 SLOT_SHIELD = "shield"
@@ -49,6 +57,7 @@ class Effect:
     value: int = 0
     statuses: tuple[str, ...] = ()
     radius: int = 0
+    chance: int = 100  # inflict: 状態異常にかかる確率（%）
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> Effect:
@@ -57,6 +66,7 @@ class Effect:
             value=int(data.get("value", 0)),
             statuses=tuple(str(s) for s in data.get("statuses", ())),
             radius=int(data.get("radius", 0)),
+            chance=int(data.get("chance", 100)),
         )
 
 
@@ -160,6 +170,10 @@ class ItemDef:
     effects: tuple[Effect, ...] = ()
     weapon: WeaponStats | None = None
     armor: ArmorStats | None = None
+    tags: tuple[str, ...] = ()  # レシピのタグ指定で使う（肉類など）
+    rotten_id: str | None = None  # 時間がたつと、この ID のアイテムに変わる（生肉）
+    grilled_id: str | None = None  # 炎属性で倒したときに、代わりに落とすアイテム
+    charges: int = 0  # 使える回数（携帯コンロ）
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any], source: str) -> ItemDef:
@@ -185,6 +199,10 @@ class ItemDef:
             effects=tuple(Effect.from_dict(e) for e in data.get("effects", ())),
             weapon=WeaponStats.from_dict(data) if category == CATEGORY_WEAPON else None,
             armor=ArmorStats.from_dict(data) if category == CATEGORY_ARMOR else None,
+            tags=tuple(str(t) for t in data.get("tags", ())),
+            rotten_id=data.get("rotten_id"),
+            grilled_id=data.get("grilled_id"),
+            charges=int(data.get("charges", 0)),
         )
 
     @property
@@ -202,7 +220,7 @@ class ItemDef:
         """アイテムメニューでの「使う」の表記。使えないアイテムは None。"""
         if not self.effects:
             return None
-        if self.category == CATEGORY_FOOD:
+        if self.category in EDIBLE_CATEGORIES:
             return "食べる"
         if self.category in (CATEGORY_SCROLL, CATEGORY_MEMO):
             return "読む"
@@ -218,6 +236,12 @@ class ItemInstance:
     curse: EquipmentTrait | None = None
     identified: bool = True  # 修正値・印・呪いまで判明しているか（個体ごと）
     curse_known: bool = True  # 呪いの有無だけでも判明しているか
+    rot_at: int | None = None  # このターンになると腐る（生肉）
+    charges: int | None = None  # 残りの使用回数。None なら定義の回数
+
+    def __post_init__(self) -> None:
+        if self.charges is None:
+            self.charges = self.definition.charges
 
     @property
     def id(self) -> str:
@@ -236,6 +260,8 @@ class ItemInstance:
         definition = self.definition
         if definition.stackable:
             return f"{definition.name}（{self.count}本）"
+        if definition.charges:
+            return f"{definition.name}（残り{self.charges}回）"
         if not definition.is_equipment:
             return definition.name
         if not self.identified:

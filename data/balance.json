@@ -154,6 +154,27 @@
       }
     ]
   },
+  "cooking": {
+    "drop_chance": 30,
+    "rot_turns": 500,
+    "fail_chance": 5,
+    "campfire_chance": 30,
+    "campfire_floors": [5, 10, 15, 19],
+    "memo_gold": 50,
+    "mystery_penalties": [
+      {"type": "inflict", "statuses": ["poison"]},
+      {"type": "inflict", "statuses": ["confusion"]},
+      {"type": "inflict", "statuses": ["max_hp_down"]},
+      {"type": "satiety", "value": -10}
+    ],
+    "cutin": {
+      "wipe_seconds": 0.3,
+      "cooking_seconds": 1.5,
+      "short_cooking_seconds": 0.3,
+      "short_cooking": false,
+      "skip_wipe": false
+    }
+  },
   "fov": {
     "corridor_adjacent": 1,
     "corridor_forward": 4

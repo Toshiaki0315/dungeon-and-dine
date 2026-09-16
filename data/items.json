@@ -1,7 +1,7 @@
 {
   "version": 1,
   "items": [
-    {"id": "herb", "name": "薬草", "category": "herb", "sprite": "item_herb", "price": 30, "spawn_weight": 20,
+    {"id": "herb", "name": "薬草", "category": "herb", "sprite": "item_herb", "price": 30, "spawn_weight": 20, "tags": ["薬草類"],
      "description": "HPを30回復する。料理の材料にもなる。", "effects": [{"type": "heal", "value": 30}]},
     {"id": "mana_herb", "name": "魔力草", "category": "herb", "sprite": "item_mana_herb", "price": 60, "spawn_weight": 10,
      "description": "MPを15回復する。", "effects": [{"type": "restore_mp", "value": 15}]},
@@ -9,8 +9,8 @@
      "description": "毒・混乱・盲目を治す。", "effects": [{"type": "cure", "statuses": ["poison", "confusion", "blind"]}]},
     {"id": "ration", "name": "保存食", "category": "food", "sprite": "item_ration", "price": 60, "spawn_weight": 12,
      "description": "満腹度を50回復する。", "effects": [{"type": "satiety", "value": 50}]},
-    {"id": "stove", "name": "携帯コンロ", "category": "tool", "sprite": "item_stove", "price": 150, "spawn_weight": 3,
-     "description": "焚き火がなくても3回まで調理できる。", "effects": [{"type": "stove", "value": 3}]},
+    {"id": "stove", "name": "携帯コンロ", "category": "tool", "sprite": "item_stove", "price": 150, "spawn_weight": 3, "charges": 3,
+     "description": "焚き火がなくても料理できる。3回使うと壊れる。視界に敵がいるときは使えない。"},
     {"id": "loupe", "name": "鑑定のルーペ", "category": "tool", "sprite": "item_loupe", "price": 80, "spawn_weight": 6,
      "description": "装備1品を鑑定する。", "effects": [{"type": "identify"}]},
     {"id": "uncurse_scroll", "name": "解呪の巻物", "category": "scroll", "sprite": "item_scroll", "price": 300, "spawn_weight": 3,
@@ -25,6 +25,9 @@
      "stackable": true, "spawn_count": [5, 10], "description": "弓で撃つ矢。1枠に99本までまとめられる。"},
     {"id": "memo", "name": "先人のメモ", "category": "memo", "sprite": "item_memo", "price": null, "spawn_weight": 4,
      "description": "読むと、未発見のレシピが1つ手帳に書き写される。", "effects": [{"type": "recipe_memo"}]},
+    {"id": "mystery_food", "name": "謎の物体", "category": "mystery", "sprite": "item_mystery", "price": null, "spawn_weight": 0,
+     "description": "料理に失敗してできた何か。食べると満腹度が10回復するが、悪いことが1つ起こる。",
+     "effects": [{"type": "satiety", "value": 10}, {"type": "mystery_penalty"}]},
     {"id": "gold", "name": "お金", "category": "gold", "sprite": "item_gold", "price": null, "spawn_weight": 15,
      "description": "迷宮に落ちているお金。"}
   ]

@@ -1,4 +1,4 @@
-"""1階層分の状態（タイル、部屋、敵、床アイテム、宝箱、罠）とエリア定義。仕様書 5章。
+"""1階層分の状態（タイル、部屋、敵、床アイテム、宝箱、罠、焚き火）とエリア定義。仕様書 5章。
 
 pyxel を import しないこと。
 """
@@ -9,7 +9,7 @@ from collections.abc import Iterator, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
-from game.world.direction import Direction
+from game.world.direction import Direction, chebyshev
 from game.world.tiles import WALKABLE_TILES, Tile
 
 if TYPE_CHECKING:
@@ -46,6 +46,22 @@ class Rect:
                 yield x, y
 
 
+SAFE_ZONE_RADIUS = 1  # 焚き火の周囲8マスは安全地帯（仕様書 9.3）
+
+
+@dataclass(eq=False)
+class Campfire:
+    """焚き火。隣接するか上に立つと料理できる。周囲は敵が入れない安全地帯になる。"""
+
+    x: int
+    y: int
+    expires_at: int | None = None  # このターンの終わりに消える（「火起こし」）。None は消えない
+
+    @property
+    def pos(self) -> tuple[int, int]:
+        return (self.x, self.y)
+
+
 @dataclass
 class Floor:
     number: int
@@ -59,6 +75,8 @@ class Floor:
     items: list[FloorItem] = field(default_factory=list)
     chests: list[Chest] = field(default_factory=list)
     traps: list[Trap] = field(default_factory=list)
+    campfires: list[Campfire] = field(default_factory=list)
+    kindled: bool = False  # この階で「火起こし」を使ったか
 
     def __post_init__(self) -> None:
         if len(self.tiles) != self.width * self.height:
@@ -108,6 +126,13 @@ class Floor:
 
     def trap_at(self, x: int, y: int) -> Trap | None:
         return next((t for t in self.traps if t.x == x and t.y == y), None)
+
+    def campfire_at(self, x: int, y: int) -> Campfire | None:
+        return next((c for c in self.campfires if c.x == x and c.y == y), None)
+
+    def in_safe_zone(self, x: int, y: int) -> bool:
+        """焚き火のマスか、その周囲8マスか。料理できる範囲とも同じ。"""
+        return any(chebyshev((x, y), c.pos) <= SAFE_ZONE_RADIUS for c in self.campfires)
 
 
 @dataclass(frozen=True)
