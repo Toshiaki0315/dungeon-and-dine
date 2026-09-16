@@ -23,8 +23,8 @@ secrets/
 
 # 権利確認が済むまで公開しない素材（各自ローカルに配置する）
 docs/cooking_cutin_concept.jpg
-assets/fonts/*
-!assets/fonts/README.md
+
+# 美咲フォントは再配布が許諾されているため同梱する（assets/fonts/LICENSE を参照）
 
 # ビルド成果物（配布物は GitHub Releases などで公開する）
 build/

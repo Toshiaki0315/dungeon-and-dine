@@ -79,4 +79,4 @@
 
 ## その他メモ
 
-- 日本語フォント（美咲ゴシック第2 BDF）は `assets/fonts/misaki_gothic_2nd.bdf` に置く。未配置時は組み込みフォントで起動する。
+- 日本語フォント（美咲ゴシック第2 BDF）は `assets/fonts/misaki_gothic_2nd.bdf` に同梱している（再配布可。`assets/fonts/LICENSE` 参照）。ファイルが無い場合は組み込みフォントで起動する。

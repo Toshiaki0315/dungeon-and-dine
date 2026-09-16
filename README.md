@@ -28,7 +28,8 @@ python3.11 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-日本語フォント（美咲ゴシック第2 BDF）を `assets/fonts/` に配置する。手順は [assets/fonts/README.md](assets/fonts/README.md) を参照。
+日本語フォント（美咲ゴシック第2 BDF）は `assets/fonts/` に同梱しているので、配置作業は不要。
+再配布が許諾されているフォントで、ライセンスは [assets/fonts/README.md](assets/fonts/README.md) と同フォルダの `LICENSE` を参照。
 
 ## 起動
 
