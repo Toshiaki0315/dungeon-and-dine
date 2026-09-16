@@ -22,7 +22,20 @@ APP_NAME = "DungeonAndDine"
 BUNDLED = ("assets", "data")
 
 
+def _use_utf8_output() -> None:
+    """標準出力を UTF-8 にする。
+
+    Windows では標準出力が cp1252 などになることがあり、日本語のメッセージを
+    print しただけで UnicodeEncodeError になってビルドが止まる。
+    """
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if reconfigure is not None:
+            reconfigure(encoding="utf-8", errors="replace")
+
+
 def main() -> int:
+    _use_utf8_output()
     if shutil.which("pyinstaller") is None and not _module_available():
         print(
             "PyInstaller が見つかりません。次のコマンドで入れてください:\n"
