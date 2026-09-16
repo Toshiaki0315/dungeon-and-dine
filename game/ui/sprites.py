@@ -18,6 +18,26 @@ class SpriteSheet:
     def has(self, name: str) -> bool:
         return name in self._defs
 
+    def draw_scaled(
+        self,
+        name: str,
+        x: int,
+        y: int,
+        scale: int,
+        frame: int = 0,
+        colkey: int | None = config.TRANSPARENT_COLOR,
+    ) -> None:
+        """8×8 の素材を拡大して描く（タイトル・拠点の絵。仕様書 14章）。"""
+        sprite = self._defs[name]
+        image = pyxel.images[sprite.bank]
+        u = sprite.u + (frame % sprite.frames) * sprite.w
+        for j in range(sprite.h):
+            for i in range(sprite.w):
+                color = image.pget(u + i, sprite.v + j)
+                if colkey is not None and color == colkey:
+                    continue
+                pyxel.rect(x + i * scale, y + j * scale, scale, scale, color)
+
     def draw(
         self,
         name: str,

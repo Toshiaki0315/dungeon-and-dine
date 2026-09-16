@@ -175,6 +175,14 @@
       "skip_wipe": false
     }
   },
+  "base_camp": {
+    "storage_capacity": 20,
+    "appraise_cost": 100,
+    "uncurse_cost": 200,
+    "inventory_expansion": {"cost": 1000, "amount": 5, "max_times": 2},
+    "storage_expansion": {"cost": 800, "amount": 10, "max_times": 2},
+    "bundles": {"arrow": 10}
+  },
   "fov": {
     "corridor_adjacent": 1,
     "corridor_forward": 4

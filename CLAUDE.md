@@ -36,6 +36,8 @@
   - `game/entities/ai.py` — 敵AI。`GameState` を `AIContext` として受け取る
   - `game/systems/equipment.py` — 装備の生成（修正値・印・呪い）、装備による補正の合計、未鑑定を隠した説明文
   - `game/systems/cooking.py` — 食材の定義・ドロップ率・レシピ照合・レシピ手帳
+  - `game/systems/meta.py` — 拠点のデータ（資金・倉庫・持ち物・拡張）と施設の処理、死亡・生還の引き継ぎ
+  - `game/systems/save.py` — `meta.json` / `run.json` の保存・読み込み（保存先パスは引数で受け取る）
   - `game/ui/cooking_cutin.py` — 料理カットイン（ワイプ、パレットの入れ替えと復帰、演出）
 - `tests/helpers.py` — テスト用マップの作成（`make_floor`）と、出目を固定する乱数（`FixedRng`）
 - `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う

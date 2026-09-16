@@ -98,6 +98,15 @@ class FogMap:
             return Visibility.KNOWN
         return Visibility.UNEXPLORED
 
+    def explored_bits(self) -> str:
+        """保存用に、探索済みかどうかを "0"/"1" の並びで返す（仕様書 13章）。"""
+        return "".join("1" if explored else "0" for explored in self._explored)
+
+    def restore_bits(self, bits: str) -> None:
+        if len(bits) != self.width * self.height:
+            raise ValueError("FOG の大きさが一致しません")
+        self._explored = [bit == "1" for bit in bits]
+
     @property
     def explored_count(self) -> int:
         return sum(self._explored)

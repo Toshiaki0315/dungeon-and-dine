@@ -8,8 +8,8 @@ from __future__ import annotations
 import pyxel
 
 from game import config
-from game.systems.cooking import describe_effects
-from game.systems.game_state import GameState
+from game.systems.catalog import Catalog
+from game.systems.cooking import Notebook, describe_effects
 from game.ui import font
 from game.ui.input import Controls
 from game.ui.menu import draw_window
@@ -27,8 +27,9 @@ ENTRY_ROWS = 4  # 1ページに表示するレシピの数（1件2行）
 
 
 class NotebookView:
-    def __init__(self, state: GameState) -> None:
-        self.state = state
+    def __init__(self, catalog: Catalog, notebook: Notebook) -> None:
+        self.catalog = catalog
+        self.notebook = notebook
         self.tab = 0
         self.scroll = 0
 
@@ -51,8 +52,8 @@ class NotebookView:
 
     def _entries(self) -> int:
         if self.tab == 0:
-            return len(self.state.catalog.recipes)
-        return len(self.state.notebook.failures)
+            return len(self.catalog.recipes)
+        return len(self.notebook.failures)
 
     def _max_scroll(self) -> int:
         rows = ENTRY_ROWS if self.tab == 0 else ENTRY_ROWS * 2
@@ -62,8 +63,8 @@ class NotebookView:
 
     def draw(self) -> None:
         draw_window(X, Y, W, H)
-        notebook = self.state.notebook
-        total = len(self.state.catalog.recipes)
+        notebook = self.notebook
+        total = len(self.catalog.recipes)
         title = f"レシピ手帳  発見 {len(notebook.discovered)}/{total}"
         font.draw_text(X + 8, Y + 5, title, COLOR_TEXT)
         for i, label in enumerate(TABS):
@@ -81,8 +82,8 @@ class NotebookView:
         font.draw_text(X + 8, Y + H - 11, hint, COLOR_SUBTEXT)
 
     def _draw_recipes(self) -> None:
-        catalog = self.state.catalog
-        notebook = self.state.notebook
+        catalog = self.catalog
+        notebook = self.notebook
         status_names = {s.id: s.name for s in catalog.statuses.values()}
         recipes = list(catalog.recipes.values())[self.scroll : self.scroll + ENTRY_ROWS]
         for row, recipe in enumerate(recipes):
@@ -96,8 +97,8 @@ class NotebookView:
             font.draw_text(X + 16, y + config.LINE_HEIGHT, effects, COLOR_SUBTEXT)
 
     def _draw_failures(self) -> None:
-        catalog = self.state.catalog
-        failures = self.state.notebook.failures
+        catalog = self.catalog
+        failures = self.notebook.failures
         if not failures:
             font.draw_text(X + 8, Y + 19, "まだ失敗していない。", COLOR_SUBTEXT)
             return

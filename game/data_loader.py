@@ -36,6 +36,7 @@ REQUIRED_KEYS: dict[str, tuple[str, ...]] = {
         "traps",
         "equipment",
         "cooking",
+        "base_camp",
         "fov",
         "inventory",
         "input",

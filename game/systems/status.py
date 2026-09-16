@@ -91,6 +91,17 @@ class StatusEffects:
                 self._remaining[status_id] = turns - 1
         return expired
 
+    def snapshot(self) -> dict[str, list[int]]:
+        """保存用に、状態異常IDごとの [残りターン, 重ねがけ数] を返す（仕様書 13章）。"""
+        return {
+            status_id: [turns, self._stacks.get(status_id, 1)]
+            for status_id, turns in self._remaining.items()
+        }
+
+    def restore(self, snapshot: Mapping[str, list[int]]) -> None:
+        self._remaining = {status_id: int(v[0]) for status_id, v in snapshot.items()}
+        self._stacks = {status_id: int(v[1]) for status_id, v in snapshot.items()}
+
     def clear_until_floor_change(self) -> dict[str, int]:
         """「階を移るまで」の効果を解除し、ID と重ねがけ数を返す。"""
         removed = {

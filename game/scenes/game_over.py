@@ -1,6 +1,6 @@
 """ゲームオーバー画面。仕様書 6.6。
 
-フェーズ2では、決定キーで新しい挑戦を始める。拠点へ戻る流れはフェーズ6で実装する。
+所持品・装備・レベル・所持金を失って拠点に戻る（引き継ぎは systems/meta.py）。
 """
 
 from __future__ import annotations
@@ -28,24 +28,25 @@ class GameOverScene:
         floor_number: int,
         turn: int,
         controls: Controls,
-        new_run: Callable[[], Scene],
+        to_camp: Callable[[], Scene],
     ) -> None:
         self.player_name = player_name
         self.floor_number = floor_number
         self.turn = turn
         self.controls = controls
-        self.new_run = new_run
+        self.to_camp = to_camp
         self.frames = 0
 
     def update(self) -> Scene | None:
         self.frames += 1
         if self.frames >= INPUT_DELAY_FRAMES and self.controls.triggered("confirm"):
-            return self.new_run()
+            return self.to_camp()
         return None
 
     def draw(self) -> None:
         pyxel.cls(0)
-        font.draw_text_centered(64, f"{self.player_name}は力尽きた……", COLOR_TITLE)
-        font.draw_text_centered(84, f"B{self.floor_number}F  {self.turn}ターン", COLOR_TEXT)
+        font.draw_text_centered(56, f"{self.player_name}は力尽きた……", COLOR_TITLE)
+        font.draw_text_centered(76, f"B{self.floor_number}F  {self.turn}ターン", COLOR_TEXT)
+        font.draw_text_centered(96, "所持品と所持金は失われた。", COLOR_HINT)
         if self.frames >= INPUT_DELAY_FRAMES:
-            font.draw_text_centered(120, "Enter: もう一度挑戦する", COLOR_HINT)
+            font.draw_text_centered(124, "Enter: 拠点に戻る", COLOR_HINT)

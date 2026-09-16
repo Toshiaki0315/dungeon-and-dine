@@ -13,7 +13,6 @@ import pyxel
 from game import config
 from game.entities.item import ItemInstance
 from game.scenes import Scene
-from game.scenes.game_over import GameOverScene
 from game.systems.game_state import EFFECT_CURSE, EquipResult, GameState, MoveResult
 from game.systems.progression import exp_to_next_level
 from game.ui import font, hud, minimap
@@ -89,7 +88,8 @@ class DungeonScene:
         sprites: SpriteSheet,
         controls: Controls,
         debug: bool,
-        new_run: Callable[[], Scene],
+        finish_run: Callable[[GameState, bool], Scene],
+        save_run: Callable[[GameState], None] | None = None,
         cooking_palette: list[int] | None = None,
         cutin_backgrounds: dict[str, pyxel.Image] | None = None,
     ) -> None:
@@ -97,7 +97,8 @@ class DungeonScene:
         self.sprites = sprites
         self.controls = controls
         self.debug = debug
-        self.new_run = new_run
+        self.finish_run = finish_run
+        self.save_run = save_run
         self.show_debug = False
 
         self.mode = Mode.EXPLORE
@@ -110,7 +111,7 @@ class DungeonScene:
         self.cutin = CookingCutin(
             state, state.params.cooking.cutin, cooking_palette or [], cutin_backgrounds
         )
-        self.notebook_view = NotebookView(state)
+        self.notebook_view = NotebookView(state.catalog, state.notebook)
         # 対象の選択を待っているアイテム（"item"）またはスキル（"skill"）
         self.pending_target: tuple[str, ItemInstance | str] | None = None
         self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
@@ -158,15 +159,11 @@ class DungeonScene:
         if self.state.floor.number != self._last_floor:
             self._last_floor = self.state.floor.number
             self.banner_frames = FLOOR_BANNER_SECONDS * config.FPS
+            if self.save_run is not None:
+                self.save_run(self.state)  # 階を移ったら中断データを保存する（仕様書 13章）
 
-        if self.state.is_game_over:
-            return GameOverScene(
-                player_name=self.state.player.name,
-                floor_number=self.state.floor.number,
-                turn=self.state.turn,
-                controls=self.controls,
-                new_run=self.new_run,
-            )
+        if self.state.run_over:
+            return self.finish_run(self.state, self.state.returned)
         return None
 
     def _update_explore(self, direction_command: MoveCommand | TurnCommand | None) -> None:

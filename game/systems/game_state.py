@@ -51,6 +51,7 @@ from game.systems.cooking import preview as cooking_preview
 from game.systems.equipment import EquipmentBonus, EquipmentParams, compute_bonus
 from game.systems.inventory import Inventory
 from game.systems.message_log import MessageLog, highlight
+from game.systems.meta import BaseCampParams, Loadout
 from game.systems.progression import ProgressionParams, SurvivalParams
 from game.systems.skills import (
     SKILL_APPRAISE,
@@ -89,7 +90,7 @@ IMPLEMENTED_EFFECTS = frozenset(
     {
         "heal", "restore_mp", "restore_mp_full", "cure", "satiety", "inflict", "status",
         "max_hp_up", "mystery_penalty", "recipe_memo", "fire_blast", "identify", "holy_water",
-        "uncurse_all",
+        "uncurse_all", "return",
     }
 )  # fmt: skip
 
@@ -122,6 +123,7 @@ class GameParams:
     traps: TrapParams
     equipment: EquipmentParams
     cooking: CookingParams
+    base_camp: BaseCampParams
     fov: FovParams
     inventory_capacity: int
     inventory_stack_max: int
@@ -149,6 +151,7 @@ class GameParams:
             traps=TrapParams.from_dict(balance["traps"]),
             equipment=EquipmentParams.from_dict(balance["equipment"]),
             cooking=cooking,
+            base_camp=BaseCampParams.from_dict(balance["base_camp"]),
             fov=FovParams.from_dict(balance["fov"]),
             inventory_capacity=int(balance["inventory"]["capacity"]),
             inventory_stack_max=int(balance["inventory"]["stack_max"]),
@@ -200,7 +203,14 @@ class CookPlan:
 
 
 class GameState:
-    def __init__(self, run_seed: int, params: GameParams, notebook: Notebook | None = None) -> None:
+    def __init__(
+        self,
+        run_seed: int,
+        params: GameParams,
+        notebook: Notebook | None = None,
+        *,
+        generate: bool = True,
+    ) -> None:
         self.run_seed = run_seed
         self.params = params
         self.catalog = params.catalog
@@ -212,6 +222,7 @@ class GameState:
         self.log = MessageLog()
         self.notebook = notebook if notebook is not None else Notebook()  # ランをまたいで残る
         self.interrupted = False  # 連続移動を止めるべき出来事（敵の発見・被ダメージなど）
+        self.returned = False  # 帰還の巻物で生還した
         self.effects: list[str] = []  # UI で演出する出来事（EFFECT_*）
         self._next_uid_value = 0
         self._visible_monster_ids: set[int] = set()
@@ -220,8 +231,9 @@ class GameState:
         self.floor: Floor
         self.area: Area
         self.fog: FogMap
-        self.enter_floor(1)
-        self.log.add(f"{self.player.name}は迷宮の奥へ足を踏み入れた。")
+        if generate:  # 中断データから復元するときは、systems/save.py が状態を入れる
+            self.enter_floor(1)
+            self.log.add(f"{self.player.name}は迷宮の奥へ足を踏み入れた。")
 
     # --- 状態の参照 ---
 
@@ -232,6 +244,20 @@ class GameState:
     @property
     def is_game_over(self) -> bool:
         return self.player.hp <= 0
+
+    @property
+    def run_over(self) -> bool:
+        """この挑戦が終わったか（力尽きた、または生還した）。"""
+        return self.is_game_over or self.returned
+
+    @property
+    def uid_counter(self) -> int:
+        """ここまでに配った敵の通し番号。中断データの保存・復元で使う。"""
+        return self._next_uid_value
+
+    @uid_counter.setter
+    def uid_counter(self, value: int) -> None:
+        self._next_uid_value = value
 
     @property
     def player_pos(self) -> Position:
@@ -268,6 +294,16 @@ class GameState:
     def consume_effects(self) -> list[str]:
         effects, self.effects = self.effects, []
         return effects
+
+    def take_loadout(self, loadout: Loadout) -> None:
+        """拠点に置いてある持ち物と装備を持って、挑戦を始める（仕様書 12.3）。"""
+        self.inventory.capacity = loadout.items.capacity
+        for item in loadout.items.items:
+            self.inventory.add(item)
+        for slot, item in loadout.equipment.items():
+            if item is not None:
+                self._set_equipment(slot, item)
+        self.update_fov()
 
     def equipment_bonus(self) -> EquipmentBonus:
         return compute_bonus(self.player.equipment)
@@ -977,6 +1013,9 @@ class GameState:
                 self.log.add(f"{highlight(target.name)}の呪いが解けた。")
             self.log.add(f"{highlight(target.name)}に聖なる力が宿った。")
             self.update_fov()
+        elif effect.type == "return":
+            self.returned = True
+            self.log.add(f"{p.name}は光に包まれ、地上へ引き上げられた。")
         elif effect.type == "uncurse_all":
             cursed = [item for item in p.equipped_items() if item.cursed]
             for item in cursed:
@@ -1276,7 +1315,7 @@ class GameState:
         return self._next_uid_value
 
     def _end_player_action(self) -> None:
-        if self.is_game_over:
+        if self.run_over:
             return
         self._run_until_player_turn()
         # 眠っている間は、目が覚めるまで時間だけが進む
