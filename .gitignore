@@ -40,3 +40,6 @@ Thumbs.db
 
 # ローカルのセーブデータ（通常は pyxel.user_data_dir 配下に保存される）
 save/
+
+# 他のAIツールが CLAUDE.md から生成する設定ファイル（内容が重複し、片方が古くなるため）
+AGENTS.md
