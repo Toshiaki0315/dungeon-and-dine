@@ -33,7 +33,7 @@ APP_ID: str = "dungeon-and-dine"  # pyxel.user_data_dir(APP_ID, APP_ID)
 # --- 画面 ---
 SCREEN_WIDTH: int = 640
 SCREEN_HEIGHT: int = 480  # 4:3。クラシックな画面比にし、縦にも広く見渡せるようにする
-DISPLAY_SCALE: int = 2
+DISPLAY_SCALE: int = 1
 FPS: int = 30
 
 TILE_SIZE: int = 16  # 画面上の1マスの大きさ

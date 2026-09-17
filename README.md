@@ -40,7 +40,7 @@ python3.11 -m venv .venv
 | 引数 | 内容 |
 |---|---|
 | `--seed <int>` | ランシードを固定する（同じダンジョンを再現） |
-| `--scale <int>` | 表示倍率（既定 2） |
+| `--scale <int>` | 表示倍率（既定 1。2 で 1280×960 に拡大） |
 | `--debug` | 開発ビルド扱い（F1 でデバッグ表示） |
 
 ## テスト・Lint
@@ -259,7 +259,7 @@ python3.11 -m venv .venv
 
 ```bash
 ./run.sh                 # macOS / Linux
-./run.sh --seed 123 --scale 1
+./run.sh --seed 123 --scale 2
 ```
 
 - macOS では `run.command` を Finder でダブルクリックしても起動できる。

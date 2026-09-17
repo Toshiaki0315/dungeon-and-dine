@@ -17,7 +17,7 @@
 ## よく使うコマンド
 
 - セットアップ: `uv venv --python 3.11 .venv && uv pip install --python .venv/bin/python -r requirements.txt`
-- 起動: `.venv/bin/python main.py`（`--seed 123` でマップ再現、`--scale 1` で縮小表示）
+- 起動: `.venv/bin/python main.py`（`--seed 123` でマップ再現、`--scale 2` で拡大表示）
 - 手元でのテストプレイ: `./run.sh`（macOS / Linux。Finder からは `run.command`。Windows は `run.bat`）
 - テスト: `.venv/bin/pytest`
 - Lint / フォーマット: `.venv/bin/ruff check .` / `.venv/bin/ruff format .`
