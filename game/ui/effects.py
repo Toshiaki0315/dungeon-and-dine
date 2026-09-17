@@ -18,6 +18,7 @@ POPUP_FRAMES = 18  # ダメージ数値が消えるまで
 FLASH_FRAMES = 6  # 攻撃を受けた側の点滅
 SHAKE_FRAMES = 10  # 咆哮などの画面の揺れ
 SPARKLE_FRAMES = 24  # レベルアップ
+SPARKLE_SIZE = 2  # 光の粒の大きさ（px）
 
 COLOR_DAMAGE = 10  # 敵に与えたダメージ
 COLOR_PLAYER_DAMAGE = 8  # 受けたダメージ
@@ -100,12 +101,12 @@ class EffectLayer:
         for i in range(6):
             angle = phase * 6.28 + i * 1.05
             radius = 8 + phase * 16
-            # 光の粒は素材の1ドットぶん（SPRITE_SCALE 四方）にする。1px だと小さすぎて見えにくい
+            # 光の粒は 2px 四方にする。1px だと小さすぎて見えにくい
             pyxel.rect(
                 cx + int(radius * pyxel.cos(angle * 57.3)),
                 cy + int(radius * pyxel.sin(angle * 57.3)),
-                config.SPRITE_SCALE,
-                config.SPRITE_SCALE,
+                SPARKLE_SIZE,
+                SPARKLE_SIZE,
                 COLOR_SPARKLE,
             )
 

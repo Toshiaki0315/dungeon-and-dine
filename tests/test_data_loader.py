@@ -39,7 +39,7 @@ def test_parse_sprites_applies_defaults_and_values():
     defs = data_loader.parse_sprites(
         {"image_bank": 0, "sprites": {"rat": {"u": 0, "v": 16, "frames": 2}}}
     )
-    assert defs["rat"] == data_loader.SpriteDef(u=0, v=16, w=8, h=8, frames=2, bank=0)
+    assert defs["rat"] == data_loader.SpriteDef(u=0, v=16, w=16, h=16, frames=2, bank=0)
 
 
 def test_parse_sprites_rejects_invalid_entries():

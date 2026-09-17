@@ -245,7 +245,7 @@ class BaseCampScene:
 
         draw_window(PANEL_X, MENU_Y, PANEL_W, MENU_H)
         frame = pyxel.frame_count // 5
-        self.sprites.draw_scaled("campfire", PANEL_X + 152, MENU_Y + 32, 10, frame)
+        self.sprites.draw_scaled("campfire", PANEL_X + 152, MENU_Y + 32, 5, frame)
         lines = [
             f"持ち物 {len(self.meta.loadout.items)}/{self.meta.loadout.items.capacity}",
             f"倉庫 {len(self.meta.storage)}/{self.meta.storage.capacity}",

@@ -91,7 +91,7 @@ class EndingScene:
         font.draw_text_centered(220, f"クリア {self.clears}回", COLOR_HINT)
         frame = pyxel.frame_count // 5
         # 焚き火は選択肢の上に収める（大きすぎると下の行と重なる）
-        self.sprites.draw_scaled("campfire", config.SCREEN_WIDTH // 2 - 16, 240, 4, frame)
+        self.sprites.draw_scaled("campfire", config.SCREEN_WIDTH // 2 - 16, 240, 2, frame)
 
         if self.frames < INPUT_DELAY_FRAMES:
             return

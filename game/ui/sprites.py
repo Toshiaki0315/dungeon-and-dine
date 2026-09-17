@@ -31,7 +31,7 @@ class SpriteSheet:
         frame: int = 0,
         colkey: int | None = config.TRANSPARENT_COLOR,
     ) -> None:
-        """8×8 の素材を拡大して描く（タイトル・拠点の絵。仕様書 14章）。"""
+        """素材を1ドットずつ拡大して描く（タイトル・拠点の絵。仕様書 14章）。"""
         sprite = self._defs[name]
         image = pyxel.images[sprite.bank]
         u = sprite.u + (frame % sprite.frames) * sprite.w
@@ -54,7 +54,7 @@ class SpriteSheet:
     ) -> None:
         """スプライトを描く。frame はフレーム数で割った余りを使う（横に並んだ次のコマ）。
 
-        offset を True にすると、8×8 より大きい素材（ボス）をマスの中央に寄せて描く。
+        offset を True にすると、1マスより大きい素材（ボス）をマスの中央に寄せて描く。
         outline に色を渡すと、その色で素材の1ドットぶんの縁取りを付ける（仕様書 2.3.1）。
         素材は SPRITE_SCALE 倍に拡大して描く（素材の大きさと画面上のマスの大きさは別）。
         16色しかないため、敵や落ちているものが床と同じ色になることを避けられない。

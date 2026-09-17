@@ -149,7 +149,7 @@ class NameInputScene:
         self._draw_grid()
         self._draw_actions()
         frame = pyxel.frame_count // config.ANIMATION_TICKS
-        self.sprites.draw_scaled("leo_down", 40, 40, 8, frame)
+        self.sprites.draw_scaled("leo_down", 40, 32, 4, frame)
         hint = "↑↓←→: 選ぶ  決定: 入力  Esc: 既定の名前"
         font.draw_text_centered(config.SCREEN_HEIGHT - 24, hint, COLOR_SUBTEXT)
 

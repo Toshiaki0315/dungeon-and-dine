@@ -39,9 +39,8 @@ FPS: int = 30
 TILE_SIZE: int = 16  # 画面上の1マスの大きさ
 BOSS_TILE_SIZE: int = 32
 # 素材シート（resources.pyxres）に描いてある絵の大きさ。画面上のマスの大きさとは別に持つ。
-# 素材はまだ 8×8 のままなので、画面へは SPRITE_SCALE 倍に拡大して描く。
-# 16×16 の素材に描き直したら SPRITE_SIZE を 16 にする（SPRITE_SCALE は 1 になる）。
-SPRITE_SIZE: int = 8
+# 素材は 16×16 で描いてある（SPRITE_SCALE は 1）。
+SPRITE_SIZE: int = 16
 SPRITE_SCALE: int = TILE_SIZE // SPRITE_SIZE
 
 STATUS_BAR_HEIGHT: int = 40

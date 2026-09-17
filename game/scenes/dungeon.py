@@ -537,7 +537,8 @@ class DungeonScene:
                 if self.effects.is_flashing(*monster.pos):
                     self.effects.draw_flash(sx, sy)
         px, py = screen_pos(player.x, player.y)
-        self.sprites.draw(player.sprite_name, px, py, frame)
+        # 主人公にも縁取りを付ける（髪や服が床と同じ色のエリアで沈まないようにする）
+        self.sprites.draw(player.sprite_name, px, py, frame, outline=OUTLINE_COLOR)
         if self.effects.is_flashing(player.x, player.y):
             self.effects.draw_flash(px, py)
         self.effects.draw(screen_pos)
