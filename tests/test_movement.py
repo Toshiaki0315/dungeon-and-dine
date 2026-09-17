@@ -1,7 +1,14 @@
 import pytest
 
-from game.entities.player import Player
-from game.world.direction import Direction
+from game.entities.player import (
+    APPEARANCE_IDS,
+    APPEARANCES,
+    DEFAULT_APPEARANCE,
+    PLAYER_SPRITE_NAMES,
+    Player,
+    normalize_appearance,
+)
+from game.world.direction import FACINGS, Direction
 from game.world.floor import Floor
 from game.world.tiles import Tile
 
@@ -122,13 +129,30 @@ def test_edge_wall_is_only_wall_touching_walkable_tiles():
 def test_player_sprite_uses_left_right_for_diagonals():
     player = Player(2, 2)
     expected = {
-        Direction.UP: "leo_up",
-        Direction.DOWN: "leo_down",
-        Direction.UP_LEFT: "leo_left",
-        Direction.DOWN_LEFT: "leo_left",
-        Direction.UP_RIGHT: "leo_right",
-        Direction.DOWN_RIGHT: "leo_right",
+        Direction.UP: "hero_warrior_up",
+        Direction.DOWN: "hero_warrior_down",
+        Direction.UP_LEFT: "hero_warrior_left",
+        Direction.DOWN_LEFT: "hero_warrior_left",
+        Direction.UP_RIGHT: "hero_warrior_right",
+        Direction.DOWN_RIGHT: "hero_warrior_right",
     }
     for direction, name in expected.items():
         player.facing = direction
         assert player.sprite_name == name
+
+
+def test_player_sprite_follows_the_chosen_appearance():
+    player = Player(2, 2, appearance="mage")
+    player.facing = Direction.DOWN_LEFT
+    assert player.sprite_name == "hero_mage_left"
+
+
+def test_unknown_appearance_falls_back_to_the_default():
+    assert normalize_appearance("priest") == "priest"
+    assert normalize_appearance("ninja") == DEFAULT_APPEARANCE
+    assert normalize_appearance(None) == DEFAULT_APPEARANCE
+
+
+def test_every_appearance_has_sprites_for_every_facing():
+    assert len(PLAYER_SPRITE_NAMES) == len(APPEARANCE_IDS) * len(FACINGS)
+    assert len(set(APPEARANCE_IDS)) == len(APPEARANCES) == 5

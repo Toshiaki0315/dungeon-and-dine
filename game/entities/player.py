@@ -1,4 +1,4 @@
-"""プレイヤー（レオ）。仕様書 6章。
+"""プレイヤー（主人公）。仕様書 6章。
 
 pyxel を import しないこと。
 """
@@ -15,8 +15,32 @@ from game.entities.item import SLOT_WEAPON, SLOTS, ItemInstance
 from game.world.direction import FACINGS
 
 PLAYER_NAME = "レオ"
-PLAYER_SPRITE_BASE = "leo"
-PLAYER_SPRITE_NAMES: tuple[str, ...] = tuple(f"{PLAYER_SPRITE_BASE}_{f}" for f in FACINGS)
+# 主人公の見た目（仕様書 6.1）。(ID, 表示名)。見た目だけの違いで、能力は変わらない
+APPEARANCES: tuple[tuple[str, str], ...] = (
+    ("warrior", "戦士"),
+    ("fighter", "格闘家"),
+    ("mage", "魔法使い"),
+    ("priest", "僧侶"),
+    ("merchant", "商人"),
+)
+APPEARANCE_IDS: tuple[str, ...] = tuple(appearance for appearance, _ in APPEARANCES)
+DEFAULT_APPEARANCE = "warrior"
+PLAYER_SPRITE_BASE = "hero"
+
+
+def player_sprite_name(appearance: str, facing: str) -> str:
+    """見た目と向きから素材名を作る（例: hero_mage_left）。"""
+    return f"{PLAYER_SPRITE_BASE}_{appearance}_{facing}"
+
+
+def normalize_appearance(value: object) -> str:
+    """知らない見た目（古いセーブデータなど）は既定の見た目にする。"""
+    return value if isinstance(value, str) and value in APPEARANCE_IDS else DEFAULT_APPEARANCE
+
+
+PLAYER_SPRITE_NAMES: tuple[str, ...] = tuple(
+    player_sprite_name(appearance, facing) for appearance in APPEARANCE_IDS for facing in FACINGS
+)
 
 
 @dataclass(frozen=True)
@@ -44,6 +68,7 @@ def _empty_equipment() -> dict[str, ItemInstance | None]:
 @dataclass
 class Player(Entity):
     name: str = PLAYER_NAME
+    appearance: str = DEFAULT_APPEARANCE
     level: int = 1
     exp: int = 0
     gold: int = 0
@@ -85,7 +110,7 @@ class Player(Entity):
 
     @property
     def sprite_name(self) -> str:
-        return f"{PLAYER_SPRITE_BASE}_{self.facing.sprite_facing}"
+        return player_sprite_name(self.appearance, self.facing.sprite_facing)
 
     def is_equipped(self, item: ItemInstance) -> bool:
         return any(equipped is item for equipped in self.equipment.values())

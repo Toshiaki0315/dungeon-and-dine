@@ -12,7 +12,7 @@ from typing import Any
 
 from game.data_loader import DataValidationError, dataclass_from_dict
 from game.entities.item import SLOTS, ItemDef, ItemInstance
-from game.entities.player import PLAYER_NAME
+from game.entities.player import DEFAULT_APPEARANCE, PLAYER_NAME
 from game.systems.cooking import Notebook
 from game.systems.inventory import Inventory
 
@@ -127,6 +127,7 @@ class MetaProgress:
     clears: int = 0
     deepest_floor: int = 1
     player_name: str = PLAYER_NAME
+    appearance: str = DEFAULT_APPEARANCE  # 主人公の見た目（APPEARANCES の ID）
     scores: list[ScoreEntry] = field(default_factory=list)
 
     @classmethod

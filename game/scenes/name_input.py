@@ -12,7 +12,7 @@ from collections.abc import Callable
 import pyxel
 
 from game import config
-from game.entities.player import PLAYER_NAME
+from game.entities.player import PLAYER_NAME, player_sprite_name
 from game.scenes import Scene
 from game.systems.meta import NAME_MAX_LENGTH, MetaProgress
 from game.ui import font, kana
@@ -59,6 +59,7 @@ class NameInputScene:
         self.controls = controls
         self.sprites = sprites
         self.on_done = on_done
+        self.appearance = meta.appearance
         self.text = meta.player_name if meta.player_name != PLAYER_NAME else ""
         self.page = 0
         self.row = 0
@@ -149,7 +150,8 @@ class NameInputScene:
         self._draw_grid()
         self._draw_actions()
         frame = pyxel.frame_count // config.ANIMATION_TICKS
-        self.sprites.draw_scaled("leo_down", 40, 32, 4, frame)
+        leader = player_sprite_name(self.appearance, "down")
+        self.sprites.draw_scaled(leader, 40, 32, 4, frame)
         hint = "↑↓←→: 選ぶ  決定: 入力  Esc: 既定の名前"
         font.draw_text_centered(config.SCREEN_HEIGHT - 24, hint, COLOR_SUBTEXT)
 

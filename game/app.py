@@ -11,6 +11,7 @@ import pyxel
 from game import config, data_loader, rng
 from game.entities.player import PLAYER_SPRITE_NAMES
 from game.scenes import Scene
+from game.scenes.appearance_select import AppearanceSelectScene
 from game.scenes.base_camp import BaseCampScene
 from game.scenes.dungeon import DungeonScene
 from game.scenes.ending import EndingScene
@@ -103,7 +104,23 @@ class App:
     def _name_decided(self, name: str) -> Scene:
         self.meta.player_name = name
         self.save_meta()
-        return self.base_camp(f"{name}、迷宮へようこそ。")
+        return self.appearance_select()
+
+    def appearance_select(self) -> Scene:
+        """名前を決めたあとに主人公の見た目を選ぶ（仕様書 6.1）。"""
+        return AppearanceSelectScene(
+            controls=self.controls,
+            sprites=self.sprites,
+            player_name=self.meta.player_name,
+            current=self.meta.appearance,
+            on_done=self._appearance_decided,
+            on_back=self.name_input,
+        )
+
+    def _appearance_decided(self, appearance: str) -> Scene:
+        self.meta.appearance = appearance
+        self.save_meta()
+        return self.base_camp(f"{self.meta.player_name}、迷宮へようこそ。")
 
     def base_camp(self, message: str = "") -> Scene:
         self.audio.play_bgm("camp")
@@ -127,6 +144,7 @@ class App:
             self.meta.notebook,
         )
         state.player.name = self.meta.player_name
+        state.player.appearance = self.meta.appearance
         state.take_loadout(self.meta.loadout)
         self.meta.loadout.clear()  # 持ち込んだので、拠点には残らない
         self.save_meta()

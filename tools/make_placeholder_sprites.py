@@ -22,8 +22,9 @@ sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, str(TOOLS_DIR))
 
 import pyxel  # noqa: E402
-from sprite_art import Pixels, leo, terrain  # noqa: E402
+from sprite_art import Pixels, terrain  # noqa: E402
 from sprite_art.bosses import BOSSES  # noqa: E402
+from sprite_art.heroes import HEROES  # noqa: E402
 from sprite_art.items import ITEMS, ROTTEN_RECOLOR, TRAPS  # noqa: E402
 from sprite_art.monsters import (  # noqa: E402
     CHEST_COLORS,
@@ -64,10 +65,6 @@ def paint(template: str, body: int, accent: int, dark: int, light: int) -> Pixel
     return ["".join(table.get(c, c) for c in row) for row in TEMPLATES[template]]
 
 
-def mirror(frames: list[Pixels]) -> list[Pixels]:
-    return [[row[::-1] for row in frame] for frame in frames]
-
-
 def bob(frame: Pixels) -> list[Pixels]:
     """待機の2コマ（2コマ目は1px沈む）。"""
     return [frame, ["0" * len(frame[0]), *frame[:-1]]]
@@ -94,10 +91,9 @@ def build_sheet() -> list[dict[str, list[Pixels]]]:
             "campfire": terrain.CAMPFIRE,
         },
         {
-            "leo_down": leo.walk_down(),
-            "leo_up": leo.walk_up(),
-            "leo_left": mirror(leo.walk_right()),
-            "leo_right": leo.walk_right(),
+            f"hero_{hero}_{facing}": frames
+            for hero, facings in HEROES.items()
+            for facing, frames in facings.items()
         },
         {**monsters, **chests},
         items,

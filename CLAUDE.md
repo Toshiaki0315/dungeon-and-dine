@@ -49,6 +49,7 @@
   - `game/ui/effects.py` — ダメージ表示・被弾の点滅・画面の揺れ・レベルアップの光
   - `game/ui/ranking_view.py` — ランキング（到達した階層・獲得した所持金）
   - `game/scenes/name_input.py` — 主人公の名前の入力（五十音表）
+  - `game/scenes/appearance_select.py` — 主人公の見た目の選択（5種。絵は `tools/sprite_art/heroes.py`）
   - `game/ui/kana.py` — 五十音表の定義とカーソル移動（pyxel 非依存）
 - `tests/helpers.py` — テスト用マップの作成（`make_floor`）と、出目を固定する乱数（`FixedRng`）
 - `game/scenes/dungeon.py` — 入力の解釈とサブモード管理、描画の呼び出しだけを行う

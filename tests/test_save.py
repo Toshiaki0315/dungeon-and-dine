@@ -3,6 +3,7 @@
 import json
 
 from game.entities.item import SLOT_WEAPON, ItemInstance
+from game.entities.player import DEFAULT_APPEARANCE
 from game.systems import save
 from game.systems.cooking import Notebook
 from game.systems.meta import MetaProgress
@@ -60,6 +61,12 @@ def test_run_round_trip_restores_the_player_and_inventory(tmp_path):
     assert restored.player.skills == state.player.skills
     assert [i.name for i in restored.inventory.items] == [i.name for i in state.inventory.items]
     assert restored.inventory.capacity == state.inventory.capacity
+
+
+def test_run_round_trip_keeps_the_appearance(tmp_path):
+    state = played_state()
+    state.player.appearance = "fighter"
+    assert round_trip(tmp_path, state).player.appearance == "fighter"
 
 
 def test_run_round_trip_keeps_equipment_pointing_at_the_carried_item(tmp_path):
@@ -178,6 +185,22 @@ def test_meta_round_trip(tmp_path):
     assert restored.notebook.failures == [("herb", "herb")]
     assert (restored.inventory_expansions, restored.storage_expansions) == (1, 2)
     assert (restored.clears, restored.deepest_floor) == (3, 12)
+
+
+def test_meta_keeps_the_chosen_appearance(tmp_path):
+    meta = filled_meta()
+    meta.appearance = "priest"
+    save.save_meta(tmp_path, meta)
+    assert save.load_meta(tmp_path, PARAMS, CAMP).appearance == "priest"
+
+
+def test_meta_without_appearance_uses_the_default(tmp_path):
+    save.save_meta(tmp_path, filled_meta())
+    path = tmp_path / save.META_FILE
+    data = json.loads(path.read_text(encoding="utf-8"))
+    del data["appearance"]  # 見た目を選べるようになる前のセーブデータ
+    path.write_text(json.dumps(data), encoding="utf-8")
+    assert save.load_meta(tmp_path, PARAMS, CAMP).appearance == DEFAULT_APPEARANCE
 
 
 def test_meta_keeps_expanded_capacities(tmp_path):

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Any
 
 from game.entities.item import SLOTS, Chest, EquipmentTrait, FloorItem, ItemInstance
 from game.entities.monster import Monster
-from game.entities.player import PLAYER_NAME, Player
+from game.entities.player import PLAYER_NAME, Player, normalize_appearance
 from game.systems.catalog import Catalog
 from game.systems.cooking import Notebook
 from game.systems.inventory import Inventory
@@ -174,6 +174,7 @@ def meta_to_dict(meta: MetaProgress) -> dict[str, Any]:
         "clears": meta.clears,
         "deepest_floor": meta.deepest_floor,
         "player_name": meta.player_name,
+        "appearance": meta.appearance,
         "scores": [
             {
                 "name": s.name,
@@ -206,8 +207,9 @@ def meta_from_dict(
         storage_expansions=int(data["storage_expansions"]),
         clears=int(data["clears"]),
         deepest_floor=int(data["deepest_floor"]),
-        # 名前とランキングは後から加えた項目なので、古いセーブデータでも読めるようにする
+        # 名前・見た目・ランキングは後から加えた項目なので、古いセーブデータでも読めるようにする
         player_name=str(data.get("player_name") or PLAYER_NAME),
+        appearance=normalize_appearance(data.get("appearance")),
         scores=[
             ScoreEntry(
                 str(s["name"]),
@@ -242,6 +244,7 @@ def load_meta(save_dir: Path, params: GameParams, camp: BaseCampParams) -> MetaP
 def player_to_dict(player: Player, items: list[ItemInstance]) -> dict[str, Any]:
     return {
         "name": player.name,
+        "appearance": player.appearance,
         "x": player.x,
         "y": player.y,
         "facing": player.facing.name,
@@ -270,6 +273,8 @@ def player_to_dict(player: Player, items: list[ItemInstance]) -> dict[str, Any]:
 def player_from_dict(data: Mapping[str, Any], items: list[ItemInstance]) -> Player:
     player = Player(
         name=str(data.get("name") or PLAYER_NAME),
+        # 見た目は後から加えた項目なので、古いセーブデータでも読めるようにする
+        appearance=normalize_appearance(data.get("appearance")),
         x=int(data["x"]),
         y=int(data["y"]),
         facing=Direction[data["facing"]],
