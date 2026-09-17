@@ -11,7 +11,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Dungeon & Dine: 飢餓のトレジャーハンター")
     parser.add_argument("--seed", type=int, default=None, help="ランシードを固定する（再現用）")
     parser.add_argument(
-        "--scale", type=int, default=config.DISPLAY_SCALE, help="表示倍率（既定: 4）"
+        "--scale", type=int, default=config.DISPLAY_SCALE, help="表示倍率（既定: 2）"
     )
     parser.add_argument(
         "--debug", action="store_true", help="開発ビルド扱い（F1 デバッグ表示を有効化）"

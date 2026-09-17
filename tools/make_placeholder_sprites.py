@@ -972,7 +972,7 @@ def build_sheet() -> list[dict[str, list[Pixels]]]:
 
 
 def main() -> None:
-    size = config.TILE_SIZE
+    size = config.SPRITE_SIZE  # 素材シート上の絵の大きさ（画面上のマスの大きさではない）
     pyxel.init(64, 64, title="make_placeholder_sprites")
     if config.RESOURCE_PATH.exists():
         pyxel.load(str(config.RESOURCE_PATH))

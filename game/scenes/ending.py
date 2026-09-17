@@ -31,7 +31,7 @@ CHOICES: tuple[tuple[str, str], ...] = (
     ("さらに潜る", CHOICE_DIVE),
     ("拠点へ帰還する", CHOICE_RETURN),
 )
-CHOICE_Y = 116
+CHOICE_Y = 304
 
 
 class EndingScene:
@@ -82,24 +82,24 @@ class EndingScene:
             # 舞い上がる光の粒（迷宮から抜け出す演出）
             x = (i * 37 + 11) % config.SCREEN_WIDTH
             y = config.SCREEN_HEIGHT - (pyxel.frame_count // 2 + i * 13) % config.SCREEN_HEIGHT
-            pyxel.pset(x, y, COLOR_STAR if i % 3 else COLOR_TITLE)
+            pyxel.rect(x, y, 2, 2, COLOR_STAR if i % 3 else COLOR_TITLE)
 
-        font.draw_text_centered(24, f"{self.boss_name}を討ち果たした！", COLOR_TITLE)
+        font.draw_text_centered(120, f"{self.boss_name}を討ち果たした！", COLOR_TITLE)
         reached = f"{self.player_name}は B{self.floor_number}F へ到達した。"
-        font.draw_text_centered(44, reached, COLOR_TEXT)
-        font.draw_text_centered(60, f"Lv{self.level}　{self.turn}ターン", COLOR_TEXT)
-        font.draw_text_centered(74, f"クリア {self.clears}回", COLOR_HINT)
+        font.draw_text_centered(160, reached, COLOR_TEXT)
+        font.draw_text_centered(192, f"Lv{self.level}　{self.turn}ターン", COLOR_TEXT)
+        font.draw_text_centered(220, f"クリア {self.clears}回", COLOR_HINT)
         frame = pyxel.frame_count // 5
         # 焚き火は選択肢の上に収める（大きすぎると下の行と重なる）
-        self.sprites.draw_scaled("campfire", config.SCREEN_WIDTH // 2 - 8, 84, 2, frame)
+        self.sprites.draw_scaled("campfire", config.SCREEN_WIDTH // 2 - 16, 240, 4, frame)
 
         if self.frames < INPUT_DELAY_FRAMES:
             return
-        font.draw_text_centered(CHOICE_Y - 12, "迷宮に果てはない。どうする？", COLOR_HINT)
+        font.draw_text_centered(CHOICE_Y - 24, "迷宮に果てはない。どうする？", COLOR_HINT)
         for i, (label, _) in enumerate(CHOICES):
-            y = CHOICE_Y + i * config.LINE_HEIGHT
+            y = CHOICE_Y + i * (config.LINE_HEIGHT + 8)
             width = font.text_width(label)
             x = (config.SCREEN_WIDTH - width) // 2
             if i == self.index:
-                pyxel.rect(x - 4, y - 1, width + 8, config.LINE_HEIGHT, COLOR_CURSOR)
+                pyxel.rect(x - 8, y - 2, width + 16, config.LINE_HEIGHT, COLOR_CURSOR)
             font.draw_text(x, y, label, COLOR_TEXT)

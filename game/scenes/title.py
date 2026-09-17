@@ -18,8 +18,9 @@ COLOR_TEXT = 7
 COLOR_SUBTEXT = 13
 COLOR_CURSOR = 5
 
-MENU_X, MENU_Y = 32, 88
-PICTURE_X, PICTURE_Y, PICTURE_SCALE = 200, 60, 6
+MENU_X, MENU_Y = 64, 208
+MENU_STEP = 32
+PICTURE_X, PICTURE_Y, PICTURE_SCALE = 400, 180, 12
 
 
 class TitleScene:
@@ -64,19 +65,19 @@ class TitleScene:
 
     def draw(self) -> None:
         pyxel.cls(0)
-        font.draw_text_centered(28, "Dungeon & Dine", COLOR_TITLE)
-        font.draw_text_centered(44, "飢餓のトレジャーハンター", COLOR_SUBTEXT)
+        font.draw_text_centered(96, "Dungeon & Dine", COLOR_TITLE)
+        font.draw_text_centered(128, "飢餓のトレジャーハンター", COLOR_SUBTEXT)
 
         for i, (label, _) in enumerate(self.options):
-            y = MENU_Y + i * 14
+            y = MENU_Y + i * MENU_STEP
             if i == self.cursor:
-                pyxel.rect(MENU_X - 6, y - 2, 100, 12, COLOR_CURSOR)
+                pyxel.rect(MENU_X - 12, y - 4, 200, 24, COLOR_CURSOR)
             font.draw_text(MENU_X, y, label, COLOR_TEXT)
 
         frame = pyxel.frame_count // 5
         self.sprites.draw_scaled("campfire", PICTURE_X, PICTURE_Y, PICTURE_SCALE, frame)
 
         record = f"最深到達 B{self.meta.deepest_floor}F　クリア {self.meta.clears}回"
-        font.draw_text_centered(config.SCREEN_HEIGHT - 24, record, COLOR_SUBTEXT)
+        font.draw_text_centered(config.SCREEN_HEIGHT - 64, record, COLOR_SUBTEXT)
         if self.message:
-            font.draw_text_centered(config.SCREEN_HEIGHT - 12, self.message, COLOR_TEXT)
+            font.draw_text_centered(config.SCREEN_HEIGHT - 32, self.message, COLOR_TEXT)

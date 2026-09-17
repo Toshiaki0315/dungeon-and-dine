@@ -55,8 +55,8 @@ class SpriteDef:
 
     u: int
     v: int
-    w: int = config.TILE_SIZE
-    h: int = config.TILE_SIZE
+    w: int = config.SPRITE_SIZE  # 素材シート上の絵の大きさ（画面上のマスの大きさではない）
+    h: int = config.SPRITE_SIZE
     frames: int = 1
     bank: int = 0
 
@@ -109,8 +109,8 @@ def parse_sprites(data: Mapping[str, Any]) -> dict[str, SpriteDef]:
         sprite = SpriteDef(
             u=int(entry["u"]),
             v=int(entry["v"]),
-            w=int(entry.get("w", config.TILE_SIZE)),
-            h=int(entry.get("h", config.TILE_SIZE)),
+            w=int(entry.get("w", config.SPRITE_SIZE)),
+            h=int(entry.get("h", config.SPRITE_SIZE)),
             frames=int(entry.get("frames", 1)),
             bank=int(entry.get("bank", data.get("image_bank", 0))),
         )

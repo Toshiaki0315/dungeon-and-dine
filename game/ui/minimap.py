@@ -10,8 +10,10 @@ from game.world.floor import Floor
 from game.world.fov import FogMap, Visibility
 from game.world.tiles import Tile
 
-CELL_W = 4  # 1タイル = 4×2 px
-CELL_H = 2
+# 1タイル = 8×8 px（64×48 マスで 512×384 px）。320×180 の頃は縦が足りず 4×2 に潰して
+# 横長に歪んでいたが、4:3 で縦に余裕ができたので正しい縦横比の正方形にする
+CELL_W = 8
+CELL_H = 8
 
 COLOR_TEXT = 7
 COLOR_HINT = 13
@@ -24,7 +26,7 @@ BLINK_TICKS = 8
 
 def draw_full_map(floor: Floor, fog: FogMap, player_pos: tuple[int, int], title: str) -> None:
     """既知のタイル・階段・プレイヤーの位置だけを縮小して描く。"""
-    font.draw_text(4, 3, f"地図  {title}", COLOR_TEXT)
+    font.draw_text(8, 6, f"地図  {title}", COLOR_TEXT)
     map_w, map_h = floor.width * CELL_W, floor.height * CELL_H
     ox = (config.SCREEN_WIDTH - map_w) // 2
     oy = (config.SCREEN_HEIGHT - map_h) // 2
@@ -41,7 +43,7 @@ def draw_full_map(floor: Floor, fog: FogMap, player_pos: tuple[int, int], title:
         px, py = player_pos
         pyxel.rect(ox + px * CELL_W, oy + py * CELL_H, CELL_W, CELL_H, COLOR_PLAYER)
 
-    font.draw_text(4, config.SCREEN_HEIGHT - 11, "M / Esc: 閉じる", COLOR_HINT)
+    font.draw_text(8, config.SCREEN_HEIGHT - 22, "M / Esc: 閉じる", COLOR_HINT)
 
 
 def _tile_color(floor: Floor, x: int, y: int) -> int | None:

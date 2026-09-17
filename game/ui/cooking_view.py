@@ -25,8 +25,8 @@ COLOR_FAILURE = 8  # 失敗リストにある組み合わせ
 
 CANCELLED = "cancelled"  # update() の戻り値: 調理をやめる
 
-LIST_X, LIST_Y, LIST_W, LIST_H = 6, 6, 186, 128
-PANEL_X, PANEL_W = 198, 116
+LIST_X, LIST_Y, LIST_W, LIST_H = 12, 12, 372, 256
+PANEL_X, PANEL_W = 396, 232
 ROWS = 9
 COOK_LABEL = "［調理する］"
 
@@ -106,53 +106,53 @@ class CookingView:
     def _draw_list(self) -> None:
         x, y, w, h = LIST_X, LIST_Y, LIST_W, LIST_H
         draw_window(x, y, w, h)
-        font.draw_text(x + 8, y + 5, "材料を選ぶ", COLOR_TEXT)
-        pyxel.line(x + 4, y + 15, x + w - 5, y + 15, COLOR_LINE)
+        font.draw_text(x + 16, y + 10, "材料を選ぶ", COLOR_TEXT)
+        pyxel.line(x + 8, y + 30, x + w - 10, y + 30, COLOR_LINE)
 
         candidates = self.candidates
         rows: list[tuple[str, ItemInstance | None]] = [(i.name, i) for i in candidates]
         rows.append((COOK_LABEL, None))
         if not candidates:
-            font.draw_text(x + 8, y + 19, "材料にできるものがない。", COLOR_SUBTEXT)
+            font.draw_text(x + 16, y + 38, "材料にできるものがない。", COLOR_SUBTEXT)
         for row, (label, item) in enumerate(rows[self.scroll : self.scroll + ROWS]):
             index = self.scroll + row
-            row_y = y + 19 + row * config.LINE_HEIGHT
+            row_y = y + 38 + row * config.LINE_HEIGHT
             if index == self.cursor:
-                pyxel.rect(x + 4, row_y - 1, w - 8, config.LINE_HEIGHT, COLOR_CURSOR)
+                pyxel.rect(x + 8, row_y - 2, w - 16, config.LINE_HEIGHT, COLOR_CURSOR)
             if item is not None and item in self.selected:
                 number = self.selected.index(item) + 1
-                font.draw_text(x + 6, row_y, str(number), COLOR_NUMBER)
+                font.draw_text(x + 12, row_y, str(number), COLOR_NUMBER)
             color = (
                 COLOR_TEXT
                 if item is not None or len(self.selected) >= MIN_MATERIALS
                 else COLOR_SUBTEXT
             )
-            font.draw_text(x + 16, row_y, label, color)
+            font.draw_text(x + 32, row_y, label, color)
         if self.scroll > 0:
-            font.draw_text(x + w - 12, y + 19, "▲", COLOR_SUBTEXT)
+            font.draw_text(x + w - 24, y + 38, "▲", COLOR_SUBTEXT)
         if self.scroll + ROWS < len(rows):
-            font.draw_text(x + w - 12, y + 19 + (ROWS - 1) * config.LINE_HEIGHT, "▼", COLOR_SUBTEXT)
+            font.draw_text(x + w - 24, y + 38 + (ROWS - 1) * config.LINE_HEIGHT, "▼", COLOR_SUBTEXT)
 
     def _draw_panel(self) -> None:
         x, y, w = PANEL_X, LIST_Y, PANEL_W
         draw_window(x, y, w, LIST_H)
-        font.draw_text(x + 8, y + 5, "選んだ材料", COLOR_TEXT)
-        pyxel.line(x + 4, y + 15, x + w - 5, y + 15, COLOR_LINE)
+        font.draw_text(x + 16, y + 10, "選んだ材料", COLOR_TEXT)
+        pyxel.line(x + 8, y + 30, x + w - 10, y + 30, COLOR_LINE)
         for slot in range(MAX_MATERIALS):
-            row_y = y + 20 + slot * config.LINE_HEIGHT
+            row_y = y + 40 + slot * config.LINE_HEIGHT
             if slot < len(self.selected):
-                font.draw_text(x + 6, row_y, f"{slot + 1}", COLOR_NUMBER)
-                font.draw_text(x + 16, row_y, self.selected[slot].name, COLOR_TEXT)
+                font.draw_text(x + 12, row_y, f"{slot + 1}", COLOR_NUMBER)
+                font.draw_text(x + 32, row_y, self.selected[slot].name, COLOR_TEXT)
             else:
-                font.draw_text(x + 16, row_y, "――", COLOR_SUBTEXT)
+                font.draw_text(x + 32, row_y, "――", COLOR_SUBTEXT)
 
         preview = self.state.cooking_preview(self.selected)
-        preview_y = y + 22 + MAX_MATERIALS * config.LINE_HEIGHT
+        preview_y = y + 44 + MAX_MATERIALS * config.LINE_HEIGHT
         if preview.dish_name is not None:
-            font.draw_text(x + 8, preview_y, f"→ {preview.dish_name}", COLOR_DISH)
+            font.draw_text(x + 16, preview_y, f"→ {preview.dish_name}", COLOR_DISH)
         elif preview.known_failure:
-            font.draw_text(x + 8, preview_y, "✕ 失敗した組み合わせ", COLOR_FAILURE)
+            font.draw_text(x + 16, preview_y, "✕ 失敗した組み合わせ", COLOR_FAILURE)
         elif len(self.selected) >= MIN_MATERIALS:
-            font.draw_text(x + 8, preview_y, "→ ？？？", COLOR_SUBTEXT)
+            font.draw_text(x + 16, preview_y, "→ ？？？", COLOR_SUBTEXT)
         if self.message:
-            font.draw_text(x + 8, preview_y + config.LINE_HEIGHT, self.message, COLOR_FAILURE)
+            font.draw_text(x + 16, preview_y + config.LINE_HEIGHT, self.message, COLOR_FAILURE)

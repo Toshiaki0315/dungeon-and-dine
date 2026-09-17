@@ -48,29 +48,29 @@ class RankingView:
     def draw(self, x: int, y: int, w: int, h: int) -> None:
         draw_window(x, y, w, h)
         for i, label in enumerate(TABS):
-            tab_x = x + 8 + i * 116
+            tab_x = x + 16 + i * 232
             if i == self.tab:
-                pyxel.rect(tab_x - 4, y + 4, font.text_width(label) + 8, 10, COLOR_TAB)
-            font.draw_text(tab_x, y + 5, label, COLOR_TEXT)
+                pyxel.rect(tab_x - 8, y + 8, font.text_width(label) + 16, 20, COLOR_TAB)
+            font.draw_text(tab_x, y + 10, label, COLOR_TEXT)
         hint = "←→: 切り替え"
-        font.draw_text(x + w - 8 - font.text_width(hint), y + 5, hint, COLOR_SUBTEXT)
-        pyxel.line(x + 4, y + 15, x + w - 5, y + 15, COLOR_LINE)
+        font.draw_text(x + w - 16 - font.text_width(hint), y + 10, hint, COLOR_SUBTEXT)
+        pyxel.line(x + 8, y + 30, x + w - 10, y + 30, COLOR_LINE)
 
         entries = self.entries()
         if not entries:
-            font.draw_text(x + 8, y + 20, "まだ記録がない。", COLOR_SUBTEXT)
+            font.draw_text(x + 16, y + 40, "まだ記録がない。", COLOR_SUBTEXT)
             return
         for rank, entry in enumerate(entries, start=1):
-            row_y = y + 19 + (rank - 1) * config.LINE_HEIGHT
+            row_y = y + 38 + (rank - 1) * config.LINE_HEIGHT
             color = COLOR_TEXT
             if entry is self.latest:
                 color = COLOR_LATEST  # 今回の記録
             elif entry.outcome == "clear":
                 color = COLOR_CLEAR
-            font.draw_text(x + 8, row_y, f"{rank:>2}", COLOR_SUBTEXT)
-            font.draw_text(x + 24, row_y, entry.name, color)
-            font.draw_text(x + 110, row_y, f"B{entry.floor}F", color)
+            font.draw_text(x + 16, row_y, f"{rank:>2}", COLOR_SUBTEXT)
+            font.draw_text(x + 48, row_y, entry.name, color)
+            font.draw_text(x + 220, row_y, f"B{entry.floor}F", color)
             gold = f"{entry.gold}G"
-            font.draw_text(x + 176 - font.text_width(gold), row_y, gold, color)
-            font.draw_text(x + 190, row_y, f"{entry.turn}ターン", COLOR_SUBTEXT)
-            font.draw_text(x + 250, row_y, entry.outcome_label, COLOR_SUBTEXT)
+            font.draw_text(x + 352 - font.text_width(gold), row_y, gold, color)
+            font.draw_text(x + 380, row_y, f"{entry.turn}ターン", COLOR_SUBTEXT)
+            font.draw_text(x + 500, row_y, entry.outcome_label, COLOR_SUBTEXT)

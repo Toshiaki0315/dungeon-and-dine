@@ -44,14 +44,14 @@ class ConfirmDialog:
         return False
 
     def draw(self) -> None:
-        w = max(font.text_width(self.message) + 24, 120)
-        h = 40
+        w = max(font.text_width(self.message) + 48, 240)
+        h = 80
         x = (config.SCREEN_WIDTH - w) // 2
         y = config.MAP_TOP + (config.MAP_VIEW_HEIGHT - h) // 2
         draw_window(x, y, w, h)
-        font.draw_text_centered(y + 8, self.message, COLOR_TEXT)
+        font.draw_text_centered(y + 16, self.message, COLOR_TEXT)
         for i, label in enumerate(self.OPTIONS):
-            ox = config.SCREEN_WIDTH // 2 - 36 + i * 48
+            ox = config.SCREEN_WIDTH // 2 - 72 + i * 96
             if i == self.selected:
-                pyxel.rect(ox - 4, y + 22, font.text_width(label) + 8, 12, COLOR_CURSOR)
-            font.draw_text(ox, y + 24, label, COLOR_TEXT)
+                pyxel.rect(ox - 8, y + 44, font.text_width(label) + 16, 24, COLOR_CURSOR)
+            font.draw_text(ox, y + 48, label, COLOR_TEXT)

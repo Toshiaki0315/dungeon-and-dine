@@ -21,7 +21,7 @@ COLOR_TAB = 5
 COLOR_UNKNOWN = 13
 COLOR_FAILURE = 8
 
-X, Y, W, H = 12, config.MAP_TOP + 2, 296, 116
+X, Y, W, H = 24, config.MAP_TOP + 4, 592, 232
 TABS = ("レシピ", "失敗リスト")
 ENTRY_ROWS = 4  # 1ページに表示するレシピの数（1件2行）
 
@@ -66,20 +66,20 @@ class NotebookView:
         notebook = self.notebook
         total = len(self.catalog.recipes)
         title = f"レシピ手帳  発見 {len(notebook.discovered)}/{total}"
-        font.draw_text(X + 8, Y + 5, title, COLOR_TEXT)
+        font.draw_text(X + 16, Y + 10, title, COLOR_TEXT)
         for i, label in enumerate(TABS):
-            tab_x = X + W - 130 + i * 64
+            tab_x = X + W - 260 + i * 128
             if i == self.tab:
-                pyxel.rect(tab_x - 4, Y + 4, font.text_width(label) + 8, 10, COLOR_TAB)
-            font.draw_text(tab_x, Y + 5, label, COLOR_TEXT)
-        pyxel.line(X + 4, Y + 15, X + W - 5, Y + 15, COLOR_LINE)
+                pyxel.rect(tab_x - 8, Y + 8, font.text_width(label) + 16, 20, COLOR_TAB)
+            font.draw_text(tab_x, Y + 10, label, COLOR_TEXT)
+        pyxel.line(X + 8, Y + 30, X + W - 10, Y + 30, COLOR_LINE)
 
         if self.tab == 0:
             self._draw_recipes()
         else:
             self._draw_failures()
         hint = "←→: 切り替え  ↑↓: スクロール  R / Esc: 閉じる"
-        font.draw_text(X + 8, Y + H - 11, hint, COLOR_SUBTEXT)
+        font.draw_text(X + 16, Y + H - 22, hint, COLOR_SUBTEXT)
 
     def _draw_recipes(self) -> None:
         catalog = self.catalog
@@ -87,24 +87,24 @@ class NotebookView:
         status_names = {s.id: s.name for s in catalog.statuses.values()}
         recipes = list(catalog.recipes.values())[self.scroll : self.scroll + ENTRY_ROWS]
         for row, recipe in enumerate(recipes):
-            y = Y + 19 + row * config.LINE_HEIGHT * 2
+            y = Y + 38 + row * config.LINE_HEIGHT * 2
             if not notebook.is_discovered(recipe.id):
-                font.draw_text(X + 8, y, "？？？", COLOR_UNKNOWN)
+                font.draw_text(X + 16, y, "？？？", COLOR_UNKNOWN)
                 continue
-            font.draw_text(X + 8, y, recipe.name, COLOR_TEXT)
-            font.draw_text(X + 120, y, catalog.ingredient_label(recipe), COLOR_SUBTEXT)
+            font.draw_text(X + 16, y, recipe.name, COLOR_TEXT)
+            font.draw_text(X + 240, y, catalog.ingredient_label(recipe), COLOR_SUBTEXT)
             effects = describe_effects(recipe.effects, status_names)
-            font.draw_text(X + 16, y + config.LINE_HEIGHT, effects, COLOR_SUBTEXT)
+            font.draw_text(X + 32, y + config.LINE_HEIGHT, effects, COLOR_SUBTEXT)
 
     def _draw_failures(self) -> None:
         catalog = self.catalog
         failures = self.notebook.failures
         if not failures:
-            font.draw_text(X + 8, Y + 19, "まだ失敗していない。", COLOR_SUBTEXT)
+            font.draw_text(X + 16, Y + 38, "まだ失敗していない。", COLOR_SUBTEXT)
             return
         rows = ENTRY_ROWS * 2
         for row, key in enumerate(failures[self.scroll : self.scroll + rows]):
-            y = Y + 19 + row * config.LINE_HEIGHT
+            y = Y + 38 + row * config.LINE_HEIGHT
             names = "＋".join(catalog.items[item_id].name for item_id in key)
-            font.draw_text(X + 8, y, "✕", COLOR_FAILURE)
-            font.draw_text(X + 20, y, names, COLOR_SUBTEXT)
+            font.draw_text(X + 16, y, "✕", COLOR_FAILURE)
+            font.draw_text(X + 40, y, names, COLOR_SUBTEXT)

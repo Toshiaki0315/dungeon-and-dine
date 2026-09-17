@@ -31,7 +31,7 @@ ACTION_DROP = "drop"
 ACTION_DESCRIBE = "describe"
 ACTION_TARGET = "target"  # 対象の選択画面で選んだ
 
-LIST_X, LIST_Y, LIST_W, LIST_H = 24, config.MAP_TOP + 2, 196, 116
+LIST_X, LIST_Y, LIST_W, LIST_H = 48, config.MAP_TOP + 4, 392, 232
 ROWS = 8
 
 
@@ -48,8 +48,8 @@ def draw_item_row(x: int, y: int, item: ItemInstance, equipped: bool) -> None:
     if equipped:
         font.draw_text(x, y, "E", COLOR_EQUIPPED)
     if item.curse_known and item.cursed:
-        font.draw_text(x + 6, y, "呪", COLOR_CURSED)
-    font.draw_text(x + 16, y, item.name, COLOR_TEXT)
+        font.draw_text(x + 12, y, "呪", COLOR_CURSED)
+    font.draw_text(x + 32, y, item.name, COLOR_TEXT)
 
 
 class InventoryView:
@@ -162,27 +162,27 @@ class InventoryView:
         x, y, w, h = LIST_X, LIST_Y, LIST_W, LIST_H
         draw_window(x, y, w, h)
         selecting = self.selection is not None
-        font.draw_text(x + 8, y + 5, self.selection_title if selecting else "道具", COLOR_TEXT)
+        font.draw_text(x + 16, y + 10, self.selection_title if selecting else "道具", COLOR_TEXT)
         if not selecting:
             count = f"{len(self.inventory)}/{self.inventory.capacity}"
-            font.draw_text(x + w - 8 - font.text_width(count), y + 5, count, COLOR_TEXT)
-        pyxel.line(x + 4, y + 15, x + w - 5, y + 15, COLOR_LINE)
+            font.draw_text(x + w - 16 - font.text_width(count), y + 10, count, COLOR_TEXT)
+        pyxel.line(x + 8, y + 30, x + w - 10, y + 30, COLOR_LINE)
 
         items = self.items
         if not items:
-            font.draw_text(x + 8, y + 20, "何も持っていない。", COLOR_SUBTEXT)
+            font.draw_text(x + 16, y + 40, "何も持っていない。", COLOR_SUBTEXT)
         for row, item in enumerate(items[self.scroll : self.scroll + ROWS]):
             index = self.scroll + row
-            row_y = y + 19 + row * config.LINE_HEIGHT
+            row_y = y + 38 + row * config.LINE_HEIGHT
             if index == self.cursor:
-                pyxel.rect(x + 4, row_y - 1, w - 8, config.LINE_HEIGHT, COLOR_CURSOR)
-            draw_item_row(x + 6, row_y, item, self.is_equipped(item))
+                pyxel.rect(x + 8, row_y - 2, w - 16, config.LINE_HEIGHT, COLOR_CURSOR)
+            draw_item_row(x + 12, row_y, item, self.is_equipped(item))
         if self.scroll > 0:
-            font.draw_text(x + w - 12, y + 19, "▲", COLOR_SUBTEXT)
+            font.draw_text(x + w - 24, y + 38, "▲", COLOR_SUBTEXT)
         if self.scroll + ROWS < len(items):
-            font.draw_text(x + w - 12, y + 19 + (ROWS - 1) * config.LINE_HEIGHT, "▼", COLOR_SUBTEXT)
+            font.draw_text(x + w - 24, y + 38 + (ROWS - 1) * config.LINE_HEIGHT, "▼", COLOR_SUBTEXT)
         hint = "決定: 選ぶ  Esc: やめる" if selecting else "決定: メニュー  I / Esc: 閉じる"
-        font.draw_text(x + 8, y + h - 11, hint, COLOR_SUBTEXT)
+        font.draw_text(x + 16, y + h - 22, hint, COLOR_SUBTEXT)
 
         if self.menu is not None:
             self._draw_menu()
@@ -191,23 +191,23 @@ class InventoryView:
 
     def _draw_menu(self) -> None:
         assert self.menu is not None
-        x, y = LIST_X + LIST_W + 4, LIST_Y
-        w, h = 68, 8 + len(self.menu) * config.LINE_HEIGHT
+        x, y = LIST_X + LIST_W + 8, LIST_Y
+        w, h = 136, 16 + len(self.menu) * config.LINE_HEIGHT
         draw_window(x, y, w, h)
         for i, (_, label) in enumerate(self.menu):
-            row_y = y + 4 + i * config.LINE_HEIGHT
+            row_y = y + 8 + i * config.LINE_HEIGHT
             if i == self.menu_cursor:
-                pyxel.rect(x + 3, row_y - 1, w - 6, config.LINE_HEIGHT, COLOR_CURSOR)
-            font.draw_text(x + 8, row_y, label, COLOR_TEXT)
+                pyxel.rect(x + 6, row_y - 2, w - 12, config.LINE_HEIGHT, COLOR_CURSOR)
+            font.draw_text(x + 16, row_y, label, COLOR_TEXT)
 
     def _draw_description(self, item: ItemInstance) -> None:
-        w = config.SCREEN_WIDTH - 48
+        w = config.SCREEN_WIDTH - 96
         lines = describe_equipment(item) if item.is_equipment else []
-        lines += wrap_text(item.definition.description, w - 16, font.text_width)
-        h = 22 + len(lines) * config.LINE_HEIGHT
-        x = 24
+        lines += wrap_text(item.definition.description, w - 32, font.text_width)
+        h = 44 + len(lines) * config.LINE_HEIGHT
+        x = 48
         y = config.MAP_TOP + (config.MAP_VIEW_HEIGHT - h) // 2
         draw_window(x, y, w, h)
-        font.draw_text(x + 8, y + 6, item.name, COLOR_TEXT)
+        font.draw_text(x + 16, y + 12, item.name, COLOR_TEXT)
         for i, line in enumerate(lines):
-            font.draw_text(x + 8, y + 18 + i * config.LINE_HEIGHT, line, COLOR_SUBTEXT)
+            font.draw_text(x + 16, y + 36 + i * config.LINE_HEIGHT, line, COLOR_SUBTEXT)

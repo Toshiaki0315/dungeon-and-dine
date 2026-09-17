@@ -77,7 +77,7 @@ class EffectLayer:
         """画面の揺れのずれ（px）。"""
         if self.shake_frames <= 0:
             return (0, 0)
-        return (self.rng.randint(-2, 2), self.rng.randint(-1, 1))
+        return (self.rng.randint(-4, 4), self.rng.randint(-2, 2))
 
     def is_flashing(self, x: int, y: int) -> bool:
         return (x, y) in self.flashes
@@ -89,8 +89,8 @@ class EffectLayer:
             self._draw_sparkle(to_screen)
         for popup in self.popups:
             sx, sy = to_screen(popup.x, popup.y)
-            rise = (POPUP_FRAMES - popup.frames) // 3
-            font.draw_text(sx + 1, sy - 4 - rise, popup.text, popup.color)
+            rise = (POPUP_FRAMES - popup.frames) * 2 // 3
+            font.draw_text(sx + 2, sy - 8 - rise, popup.text, popup.color)
 
     def _draw_sparkle(self, to_screen: ToScreen) -> None:
         """レベルアップ: 周りに光の粒が回る。"""
@@ -99,10 +99,13 @@ class EffectLayer:
         phase = (SPARKLE_FRAMES - self.sparkle_frames) / SPARKLE_FRAMES
         for i in range(6):
             angle = phase * 6.28 + i * 1.05
-            radius = 4 + phase * 8
-            pyxel.pset(
+            radius = 8 + phase * 16
+            # 光の粒は素材の1ドットぶん（SPRITE_SCALE 四方）にする。1px だと小さすぎて見えにくい
+            pyxel.rect(
                 cx + int(radius * pyxel.cos(angle * 57.3)),
                 cy + int(radius * pyxel.sin(angle * 57.3)),
+                config.SPRITE_SCALE,
+                config.SPRITE_SCALE,
                 COLOR_SPARKLE,
             )
 

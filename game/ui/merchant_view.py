@@ -22,7 +22,7 @@ COLOR_LINE = 5
 COLOR_PRICE = 10
 COLOR_POOR = 8  # 買えないものは赤
 
-LIST_X, LIST_Y, LIST_W, LIST_H = 24, config.MAP_TOP + 2, 196, 116
+LIST_X, LIST_Y, LIST_W, LIST_H = 48, config.MAP_TOP + 4, 392, 232
 ROWS = 8
 
 MENU_BUY = "buy"
@@ -129,10 +129,10 @@ class MerchantView:
     def draw(self) -> None:
         draw_window(LIST_X, LIST_Y, LIST_W, LIST_H)
         title = {"menu": "行商人", "buy": "買う", "uncurse": "呪いを解く"}[self.mode]
-        font.draw_text(LIST_X + 8, LIST_Y + 5, title, COLOR_TEXT)
+        font.draw_text(LIST_X + 16, LIST_Y + 10, title, COLOR_TEXT)
         gold = f"所持金 {self.state.player.gold}G"
-        font.draw_text(LIST_X + LIST_W - 8 - font.text_width(gold), LIST_Y + 5, gold, COLOR_PRICE)
-        pyxel.line(LIST_X + 4, LIST_Y + 15, LIST_X + LIST_W - 5, LIST_Y + 15, COLOR_LINE)
+        font.draw_text(LIST_X + LIST_W - 16 - font.text_width(gold), LIST_Y + 10, gold, COLOR_PRICE)
+        pyxel.line(LIST_X + 8, LIST_Y + 30, LIST_X + LIST_W - 10, LIST_Y + 30, COLOR_LINE)
 
         if self.mode == "menu":
             self._draw_rows([label for label, _ in MENU], [""] * len(MENU))
@@ -147,21 +147,21 @@ class MerchantView:
             labels = [i.name for i in items]
             self._draw_rows(labels, [f"{cost}G"] * len(items), [cost] * len(items))
             if not items:
-                font.draw_text(LIST_X + 8, LIST_Y + 22, "呪われた持ち物はない。", COLOR_SUBTEXT)
+                font.draw_text(LIST_X + 16, LIST_Y + 44, "呪われた持ち物はない。", COLOR_SUBTEXT)
 
         if self.message:
-            font.draw_text(LIST_X + 8, LIST_Y + LIST_H - 14, self.message, COLOR_SUBTEXT)
+            font.draw_text(LIST_X + 16, LIST_Y + LIST_H - 28, self.message, COLOR_SUBTEXT)
 
     def _draw_rows(
         self, labels: list[str], suffixes: list[str], prices: list[int] | None = None
     ) -> None:
         for row, index in enumerate(range(self.scroll, min(len(labels), self.scroll + ROWS))):
-            y = LIST_Y + 20 + row * config.LINE_HEIGHT
+            y = LIST_Y + 40 + row * config.LINE_HEIGHT
             if index == self.cursor:
-                pyxel.rect(LIST_X + 4, y - 1, LIST_W - 8, config.LINE_HEIGHT, COLOR_CURSOR)
-            font.draw_text(LIST_X + 12, y, labels[index], COLOR_TEXT)
+                pyxel.rect(LIST_X + 8, y - 2, LIST_W - 16, config.LINE_HEIGHT, COLOR_CURSOR)
+            font.draw_text(LIST_X + 24, y, labels[index], COLOR_TEXT)
             if suffixes[index]:
                 affordable = prices is None or self.state.player.gold >= prices[index]
                 color = COLOR_PRICE if affordable else COLOR_POOR
-                x = LIST_X + LIST_W - 12 - font.text_width(suffixes[index])
+                x = LIST_X + LIST_W - 24 - font.text_width(suffixes[index])
                 font.draw_text(x, y, suffixes[index], color)

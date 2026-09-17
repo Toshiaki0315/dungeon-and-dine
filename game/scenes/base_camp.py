@@ -30,9 +30,10 @@ COLOR_LINE = 5
 COLOR_TITLE = 10
 COLOR_DISABLED = 13
 
-MENU_X, MENU_Y, MENU_W = 8, 24, 96
-PANEL_X, PANEL_W = 112, 200
-LIST_X, LIST_Y, LIST_W, LIST_H = 8, 22, 304, 136
+MENU_X, MENU_Y, MENU_W, MENU_H = 16, 48, 192, 232
+PANEL_X, PANEL_W = 224, 400
+# 10行並べたうえでメッセージを出しても最後の行と重ならない高さにする
+LIST_X, LIST_Y, LIST_W, LIST_H = 16, 44, 608, 300
 ROWS = 10
 
 FACILITIES: tuple[tuple[str, str], ...] = (
@@ -223,9 +224,9 @@ class BaseCampScene:
 
     def draw(self) -> None:
         pyxel.cls(0)
-        font.draw_text(8, 6, "ベースキャンプ", COLOR_TITLE)
+        font.draw_text(16, 12, "ベースキャンプ", COLOR_TITLE)
         funds = f"拠点資金 {self.meta.funds}G"
-        font.draw_text(config.SCREEN_WIDTH - 8 - font.text_width(funds), 6, funds, COLOR_TEXT)
+        font.draw_text(config.SCREEN_WIDTH - 16 - font.text_width(funds), 12, funds, COLOR_TEXT)
         if self.mode == Mode.NOTEBOOK:
             self.notebook_view.draw()
             return
@@ -235,16 +236,16 @@ class BaseCampScene:
         self._draw_menu()
 
     def _draw_menu(self) -> None:
-        draw_window(MENU_X, MENU_Y, MENU_W, 116)
+        draw_window(MENU_X, MENU_Y, MENU_W, MENU_H)
         for i, (_, label) in enumerate(FACILITIES):
-            y = MENU_Y + 6 + i * config.LINE_HEIGHT * 3 // 2
+            y = MENU_Y + 12 + i * config.LINE_HEIGHT * 3 // 2
             if i == self.cursor:
-                pyxel.rect(MENU_X + 4, y - 1, MENU_W - 8, config.LINE_HEIGHT, COLOR_CURSOR)
-            font.draw_text(MENU_X + 8, y, label, COLOR_TEXT)
+                pyxel.rect(MENU_X + 8, y - 2, MENU_W - 16, config.LINE_HEIGHT, COLOR_CURSOR)
+            font.draw_text(MENU_X + 16, y, label, COLOR_TEXT)
 
-        draw_window(PANEL_X, MENU_Y, PANEL_W, 116)
+        draw_window(PANEL_X, MENU_Y, PANEL_W, MENU_H)
         frame = pyxel.frame_count // 5
-        self.sprites.draw_scaled("campfire", PANEL_X + 76, MENU_Y + 16, 5, frame)
+        self.sprites.draw_scaled("campfire", PANEL_X + 152, MENU_Y + 32, 10, frame)
         lines = [
             f"持ち物 {len(self.meta.loadout.items)}/{self.meta.loadout.items.capacity}",
             f"倉庫 {len(self.meta.storage)}/{self.meta.storage.capacity}",
@@ -252,41 +253,41 @@ class BaseCampScene:
             f"レシピ {len(self.meta.notebook.discovered)}/{len(self.catalog.recipes)}",
         ]
         for i, line in enumerate(lines):
-            font.draw_text(PANEL_X + 10, MENU_Y + 66 + i * config.LINE_HEIGHT, line, COLOR_SUBTEXT)
+            font.draw_text(PANEL_X + 20, MENU_Y + 132 + i * config.LINE_HEIGHT, line, COLOR_SUBTEXT)
         if self.message:
-            font.draw_text(MENU_X, config.SCREEN_HEIGHT - 12, self.message, COLOR_TEXT)
+            font.draw_text(MENU_X, config.SCREEN_HEIGHT - 24, self.message, COLOR_TEXT)
 
     def _draw_list(self) -> None:
         label = dict(FACILITIES)[self.facility]
         draw_window(LIST_X, LIST_Y, LIST_W, LIST_H)
         title = label if self.facility != "storage" else f"{label}（{self._column_label()}）"
-        font.draw_text(LIST_X + 8, LIST_Y + 5, title, COLOR_TEXT)
+        font.draw_text(LIST_X + 16, LIST_Y + 10, title, COLOR_TEXT)
         rows = self._entries()
         if len(rows) > ROWS:  # 1画面に収まらないときは、いま何番目かを出す
             count = f"{self.list_cursor + 1}/{len(rows)}"
             font.draw_text(
-                LIST_X + LIST_W - 8 - font.text_width(count), LIST_Y + 5, count, COLOR_SUBTEXT
+                LIST_X + LIST_W - 16 - font.text_width(count), LIST_Y + 10, count, COLOR_SUBTEXT
             )
-        pyxel.line(LIST_X + 4, LIST_Y + 15, LIST_X + LIST_W - 5, LIST_Y + 15, COLOR_LINE)
+        pyxel.line(LIST_X + 8, LIST_Y + 30, LIST_X + LIST_W - 10, LIST_Y + 30, COLOR_LINE)
 
         entries = self._entries()
         if not entries:
-            font.draw_text(LIST_X + 8, LIST_Y + 20, "何もない。", COLOR_SUBTEXT)
+            font.draw_text(LIST_X + 16, LIST_Y + 40, "何もない。", COLOR_SUBTEXT)
         for row, entry in enumerate(entries[self.list_scroll : self.list_scroll + ROWS]):
             index = self.list_scroll + row
-            y = LIST_Y + 19 + row * config.LINE_HEIGHT
+            y = LIST_Y + 38 + row * config.LINE_HEIGHT
             if index == self.list_cursor:
-                pyxel.rect(LIST_X + 4, y - 1, LIST_W - 8, config.LINE_HEIGHT, COLOR_CURSOR)
-            font.draw_text(LIST_X + 8, y, entry.label, COLOR_TEXT)
+                pyxel.rect(LIST_X + 8, y - 2, LIST_W - 16, config.LINE_HEIGHT, COLOR_CURSOR)
+            font.draw_text(LIST_X + 16, y, entry.label, COLOR_TEXT)
             if entry.detail:
-                x = LIST_X + LIST_W - 8 - font.text_width(entry.detail)
+                x = LIST_X + LIST_W - 16 - font.text_width(entry.detail)
                 font.draw_text(x, y, entry.detail, COLOR_SUBTEXT)
         if self.message:
-            font.draw_text(LIST_X + 8, LIST_Y + LIST_H - 22, self.message, COLOR_TEXT)
+            font.draw_text(LIST_X + 16, LIST_Y + LIST_H - 44, self.message, COLOR_TEXT)
         hint = "決定: 選ぶ  Esc: 戻る"
         if self.facility == "storage":
             hint = "決定: 預ける／引き出す  ←→: 切り替え  Esc: 戻る"
-        font.draw_text(LIST_X + 8, LIST_Y + LIST_H - 11, hint, COLOR_SUBTEXT)
+        font.draw_text(LIST_X + 16, LIST_Y + LIST_H - 22, hint, COLOR_SUBTEXT)
 
     def _column_label(self) -> str:
         return "持ち物 → 倉庫" if self.column == 0 else "倉庫 → 持ち物"

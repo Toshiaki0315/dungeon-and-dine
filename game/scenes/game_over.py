@@ -52,10 +52,10 @@ class GameOverScene:
 
     def draw(self) -> None:
         pyxel.cls(0)
-        font.draw_text_centered(6, f"{self.player_name}は力尽きた……", COLOR_TITLE)
+        font.draw_text_centered(12, f"{self.player_name}は力尽きた……", COLOR_TITLE)
         summary = f"B{self.floor_number}F  {self.turn}ターン  所持品と所持金は失われた。"
-        font.draw_text_centered(18, summary, COLOR_HINT)
+        font.draw_text_centered(36, summary, COLOR_HINT)
         if self.ranking is not None:
-            self.ranking.draw(8, 32, config.SCREEN_WIDTH - 16, 132)
+            self.ranking.draw(16, 64, config.SCREEN_WIDTH - 32, 264)
         if self.frames >= INPUT_DELAY_FRAMES:
-            font.draw_text_centered(config.SCREEN_HEIGHT - 12, "Enter: 拠点に戻る", COLOR_HINT)
+            font.draw_text_centered(config.SCREEN_HEIGHT - 24, "Enter: 拠点に戻る", COLOR_HINT)

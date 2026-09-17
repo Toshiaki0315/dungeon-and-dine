@@ -26,10 +26,10 @@ COLOR_SUBTEXT = 13
 COLOR_CURSOR = 5
 COLOR_CARET = 7
 
-BOX_X, BOX_Y, BOX_W, BOX_H = 92, 26, 136, 20
-GRID_X, GRID_Y = 26, 54
-CELL_W, CELL_H = 18, 13
-ACTION_Y = GRID_Y + 6 * CELL_H + 4
+BOX_X, BOX_Y, BOX_W, BOX_H = 184, 52, 272, 40
+GRID_X, GRID_Y = 52, 108
+CELL_W, CELL_H = 36, 26
+ACTION_Y = GRID_Y + 6 * CELL_H + 8
 CARET_TICKS = 8
 
 # 表の下に並べるボタン（ラベル, 動作）
@@ -141,26 +141,26 @@ class NameInputScene:
 
     def draw(self) -> None:
         pyxel.cls(0)
-        font.draw_text(8, 6, "名前を入力してください", COLOR_TITLE)
+        font.draw_text(16, 12, "名前を入力してください", COLOR_TITLE)
         count = f"{len(self.text)}/{NAME_MAX_LENGTH}"
-        font.draw_text(config.SCREEN_WIDTH - 8 - font.text_width(count), 6, count, COLOR_SUBTEXT)
+        font.draw_text(config.SCREEN_WIDTH - 16 - font.text_width(count), 12, count, COLOR_SUBTEXT)
 
         self._draw_name_box()
         self._draw_grid()
         self._draw_actions()
         frame = pyxel.frame_count // config.ANIMATION_TICKS
-        self.sprites.draw_scaled("leo_down", 20, 20, 4, frame)
+        self.sprites.draw_scaled("leo_down", 40, 40, 8, frame)
         hint = "↑↓←→: 選ぶ  決定: 入力  Esc: 既定の名前"
-        font.draw_text_centered(config.SCREEN_HEIGHT - 9, hint, COLOR_SUBTEXT)
+        font.draw_text_centered(config.SCREEN_HEIGHT - 24, hint, COLOR_SUBTEXT)
 
     def _draw_name_box(self) -> None:
         draw_window(BOX_X, BOX_Y, BOX_W, BOX_H)
-        text_x = BOX_X + 8
-        font.draw_text(text_x, BOX_Y + 6, self.text, COLOR_TEXT)
+        text_x = BOX_X + 16
+        font.draw_text(text_x, BOX_Y + 12, self.text, COLOR_TEXT)
         if (pyxel.frame_count // CARET_TICKS) % 2 == 0:
-            pyxel.rect(text_x + font.text_width(self.text) + 1, BOX_Y + 5, 4, 8, COLOR_CARET)
+            pyxel.rect(text_x + font.text_width(self.text) + 2, BOX_Y + 10, 8, 16, COLOR_CARET)
         if not self.text:
-            font.draw_text(BOX_X + BOX_W + 6, BOX_Y + 6, f"未入力: {PLAYER_NAME}", COLOR_SUBTEXT)
+            font.draw_text(BOX_X + BOX_W + 12, BOX_Y + 12, f"未入力: {PLAYER_NAME}", COLOR_SUBTEXT)
 
     def _draw_grid(self) -> None:
         for row_index, row in enumerate(self.grid):
@@ -169,19 +169,19 @@ class NameInputScene:
                 y = GRID_Y + row_index * CELL_H
                 selected = not self.on_actions and row_index == self.row and column == self.column
                 if selected:
-                    pyxel.rect(x - 2, y - 2, CELL_W - 2, CELL_H - 2, COLOR_CURSOR)
+                    pyxel.rect(x - 4, y - 4, CELL_W - 4, CELL_H - 4, COLOR_CURSOR)
                 if char != kana.FULL_WIDTH_SPACE:
                     font.draw_text(x, y, char, COLOR_TEXT)
 
     def _draw_actions(self) -> None:
         x = GRID_X
         for index, (label, _) in enumerate(ACTIONS):
-            width = font.text_width(label) + 8
+            width = font.text_width(label) + 16
             if self.on_actions and index == self.action:
-                pyxel.rect(x - 2, ACTION_Y - 2, width, 12, COLOR_CURSOR)
+                pyxel.rect(x - 4, ACTION_Y - 4, width, 24, COLOR_CURSOR)
             else:
-                pyxel.rectb(x - 2, ACTION_Y - 2, width, 12, COLOR_SUBTEXT)
-            font.draw_text(x + 2, ACTION_Y + 1, label, COLOR_TEXT)
-            x += width + 4
+                pyxel.rectb(x - 4, ACTION_Y - 4, width, 24, COLOR_SUBTEXT)
+            font.draw_text(x + 4, ACTION_Y + 2, label, COLOR_TEXT)
+            x += width + 8
         page = kana.page_name(self.page)
-        font.draw_text(x + 4, ACTION_Y + 1, f"（{page}）", COLOR_SUBTEXT)
+        font.draw_text(x + 8, ACTION_Y + 2, f"（{page}）", COLOR_SUBTEXT)

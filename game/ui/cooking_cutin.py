@@ -18,9 +18,14 @@ from game.ui import font
 from game.ui.cooking_view import CANCELLED, CookingView
 from game.ui.input import Controls
 
-CUTIN_HEIGHT = 140  # 背景の高さ（仕様書 2.4）
-TEXT_TOP = CUTIN_HEIGHT  # 下部 320×40 のテキストウィンドウ
-GROUND_TOP = 104
+# 背景の素材は等倍 320×140（tools/make_cutin_background.py が作る）。画面へは ART_SCALE 倍に拡大し、
+# 文字の窓（下部 TEXT_WINDOW_H）より上の領域の縦中央に置く。絵の上下は暗い色の帯で埋める。
+ART_W, ART_H, ART_SCALE = 320, 140, 2
+TEXT_WINDOW_H = 80  # 仕様書 2.4 の「下部 320×40 のテキストウィンドウ」を2倍にした高さ
+CUTIN_HEIGHT = config.SCREEN_HEIGHT - TEXT_WINDOW_H
+ART_TOP = (CUTIN_HEIGHT - ART_H * ART_SCALE) // 2
+TEXT_TOP = CUTIN_HEIGHT
+GROUND_TOP = ART_TOP + 104 * ART_SCALE
 
 COLOR_TEXT = 7
 COLOR_SUBTEXT = 13
@@ -221,70 +226,79 @@ class CookingCutin:
         return 2 * t if t < 0.5 else 2 - 2 * t
 
     def _draw_background(self) -> None:
+        width = config.SCREEN_WIDTH
+        art_bottom = ART_TOP + ART_H * ART_SCALE
+        pyxel.rect(0, 0, width, CUTIN_HEIGHT, COLOR_DARK)  # 絵の上下の帯
         image = self.backgrounds.get(self.state.area.id) or self.backgrounds.get("default")
         if image is not None:
-            pyxel.blt(0, 0, image, 0, 0, config.SCREEN_WIDTH, CUTIN_HEIGHT)
+            # blt の scale は中心基準なので、左上が (0, ART_TOP) に来るようずらす
+            w, h = image.width, image.height
+            ox, oy = w * (ART_SCALE - 1) // 2, h * (ART_SCALE - 1) // 2
+            pyxel.blt(ox, ART_TOP + oy, image, 0, 0, w, h, scale=ART_SCALE)
             return
-        # 仮の背景: 単色と簡単な図形で、焚き火を囲む洞窟を描く（本素材はフェーズ7）
-        width = config.SCREEN_WIDTH
-        pyxel.rect(0, 0, width, CUTIN_HEIGHT, COLOR_DARK)
+        # 仮の背景: 単色と簡単な図形で、焚き火を囲む洞窟を描く（素材がないエリアで使う）。
+        # 等倍の素材と同じ構図を ART_SCALE 倍にした座標。上下の帯にはみ出さないよう絵の範囲で切る
+        pyxel.clip(0, ART_TOP, width, ART_H * ART_SCALE)
         pyxel.dither(0.5)
-        pyxel.rect(0, 24, width, GROUND_TOP - 24, COLOR_CAVE)
+        pyxel.rect(0, ART_TOP + 48, width, GROUND_TOP - ART_TOP - 48, COLOR_CAVE)
         pyxel.dither(1.0)
-        pyxel.elli(-40, -60, 200, 150, COLOR_CAVE)
-        pyxel.elli(width - 160, -70, 200, 150, COLOR_CAVE)
-        pyxel.rect(0, GROUND_TOP, width, CUTIN_HEIGHT - GROUND_TOP, COLOR_GROUND)
+        pyxel.elli(-80, ART_TOP - 120, 400, 300, COLOR_CAVE)
+        pyxel.elli(width - 320, ART_TOP - 140, 400, 300, COLOR_CAVE)
+        pyxel.rect(0, GROUND_TOP, width, art_bottom - GROUND_TOP, COLOR_GROUND)
         pyxel.dither(0.5)
-        pyxel.rect(0, GROUND_TOP, width, 6, COLOR_STONE)
+        pyxel.rect(0, GROUND_TOP, width, 12, COLOR_STONE)
         pyxel.dither(1.0)
-        for x in (36, 150, 268):
-            pyxel.elli(x, GROUND_TOP + 12, 26, 12, COLOR_STONE)
+        for x in (72, 300, 536):
+            pyxel.elli(x, GROUND_TOP + 24, 52, 24, COLOR_STONE)
+        pyxel.clip()
 
     def _draw_fire(self) -> None:
         """焚き火（または携帯コンロ）と、3コマで揺れる炎。"""
-        cx, base = config.SCREEN_WIDTH // 2, GROUND_TOP + 2
+        cx, base = config.SCREEN_WIDTH // 2, GROUND_TOP + 4
         frame = pyxel.frame_count // 4 % 3
         if self.plan is not None and self.plan.heat == HEAT_STOVE:
-            pyxel.rect(cx - 16, base - 6, 32, 12, COLOR_STOVE)
-            pyxel.rect(cx - 12, base - 10, 24, 4, COLOR_STONE)
+            pyxel.rect(cx - 32, base - 12, 64, 24, COLOR_STOVE)
+            pyxel.rect(cx - 24, base - 20, 48, 8, COLOR_STONE)
         else:
-            pyxel.rect(cx - 20, base - 2, 40, 6, COLOR_GROUND)
-            pyxel.rect(cx - 14, base - 6, 28, 5, COLOR_STONE)
-        sway = (-2, 0, 2)[frame]
-        pyxel.tri(cx - 12, base - 6, cx + 12, base - 6, cx + sway, base - 34, COLOR_FIRE)
-        pyxel.tri(cx - 6, base - 6, cx + 6, base - 6, cx + sway, base - 22, COLOR_FIRE_LIGHT)
+            pyxel.rect(cx - 40, base - 4, 80, 12, COLOR_GROUND)
+            pyxel.rect(cx - 28, base - 12, 56, 10, COLOR_STONE)
+        sway = (-4, 0, 4)[frame]
+        pyxel.tri(cx - 24, base - 12, cx + 24, base - 12, cx + sway, base - 68, COLOR_FIRE)
+        pyxel.tri(cx - 12, base - 12, cx + 12, base - 12, cx + sway, base - 44, COLOR_FIRE_LIGHT)
 
     def _draw_food(self) -> None:
         """串の肉（焼き色が2段階で変わる）と、レオの手元（2コマ）。"""
         if self.phase not in (Phase.COOKING, Phase.RESULT, Phase.WIPE_OUT):
             return
-        cx, base = config.SCREEN_WIDTH // 2, GROUND_TOP + 2
+        cx, base = config.SCREEN_WIDTH // 2, GROUND_TOP + 4
         stage = 0
         if self.phase == Phase.COOKING and self._progress() >= 0.5:
             stage = 1
         elif self.phase != Phase.COOKING:
             stage = 2
-        pyxel.line(cx - 26, base - 26, cx + 26, base - 30, COLOR_GROUND)
+        # 串は 2px の太さにする（1px だと拡大した画面では細すぎる）
+        for dy in (0, 1):
+            pyxel.line(cx - 52, base - 52 + dy, cx + 52, base - 60 + dy, COLOR_GROUND)
         for i in range(3):
-            pyxel.elli(cx - 16 + i * 12, base - 32 + i, 10, 8, MEAT_COLORS[stage])
+            pyxel.elli(cx - 32 + i * 24, base - 64 + i * 2, 20, 16, MEAT_COLORS[stage])
         hand = pyxel.frame_count // 8 % 2
-        pyxel.rect(cx + 26, base - 32 + hand, 10, 6, COLOR_HAND)
+        pyxel.rect(cx + 52, base - 64 + hand * 2, 20, 12, COLOR_HAND)
 
     def _update_steam(self) -> None:
         """湯気のパーティクルを立ち上らせる。"""
         cx = config.SCREEN_WIDTH // 2
         if len(self._steam) < STEAM_MAX and self._rng.random() < 0.5:
-            self._steam.append([cx + self._rng.uniform(-18, 18), GROUND_TOP - 30, 1.0])
+            self._steam.append([cx + self._rng.uniform(-36, 36), GROUND_TOP - 60, 1.0])
         for particle in self._steam:
-            particle[1] -= 0.8
-            particle[0] += self._rng.uniform(-0.4, 0.4)
+            particle[1] -= 1.6
+            particle[0] += self._rng.uniform(-0.8, 0.8)
             particle[2] -= 0.02
         self._steam[:] = [p for p in self._steam if p[2] > 0]
 
     def _draw_steam(self) -> None:
         for x, y, life in self._steam:
             pyxel.dither(max(0.0, min(1.0, life)) * 0.6)
-            pyxel.circ(x, y, 2, COLOR_STEAM)
+            pyxel.circ(x, y, 4, COLOR_STEAM)
         pyxel.dither(1.0)
 
     def _draw_text_window(self) -> None:
@@ -292,7 +306,7 @@ class CookingCutin:
         pyxel.line(0, TEXT_TOP, config.SCREEN_WIDTH - 1, TEXT_TOP, COLOR_SUBTEXT)
         lines = self._text_lines()
         for i, (text, color) in enumerate(lines[:3]):
-            font.draw_text(6, TEXT_TOP + 4 + i * config.LINE_HEIGHT, text, color)
+            font.draw_text(12, TEXT_TOP + 8 + i * config.LINE_HEIGHT, text, color)
 
     def _text_lines(self) -> list[tuple[str, int]]:
         name = self.state.player.name

@@ -31,22 +31,29 @@ TITLE: str = "Dungeon & Dine"
 APP_ID: str = "dungeon-and-dine"  # pyxel.user_data_dir(APP_ID, APP_ID)
 
 # --- 画面 ---
-SCREEN_WIDTH: int = 320
-SCREEN_HEIGHT: int = 180
-DISPLAY_SCALE: int = 4
+SCREEN_WIDTH: int = 640
+SCREEN_HEIGHT: int = 480  # 4:3。クラシックな画面比にし、縦にも広く見渡せるようにする
+DISPLAY_SCALE: int = 2
 FPS: int = 30
 
-TILE_SIZE: int = 8
-BOSS_TILE_SIZE: int = 16
+TILE_SIZE: int = 16  # 画面上の1マスの大きさ
+BOSS_TILE_SIZE: int = 32
+# 素材シート（resources.pyxres）に描いてある絵の大きさ。画面上のマスの大きさとは別に持つ。
+# 素材はまだ 8×8 のままなので、画面へは SPRITE_SCALE 倍に拡大して描く。
+# 16×16 の素材に描き直したら SPRITE_SIZE を 16 にする（SPRITE_SCALE は 1 になる）。
+SPRITE_SIZE: int = 8
+SPRITE_SCALE: int = TILE_SIZE // SPRITE_SIZE
 
-STATUS_BAR_HEIGHT: int = 20
-MAP_VIEW_HEIGHT: int = 120
-BOTTOM_PANEL_HEIGHT: int = 40
+STATUS_BAR_HEIGHT: int = 40
+MAP_VIEW_HEIGHT: int = 360
+BOTTOM_PANEL_HEIGHT: int = 80
 MAP_TOP: int = STATUS_BAR_HEIGHT
 MAP_VIEW_TILES_W: int = SCREEN_WIDTH // TILE_SIZE  # 40
-MAP_VIEW_TILES_H: int = MAP_VIEW_HEIGHT // TILE_SIZE  # 15
+MAP_VIEW_TILES_H: int = MAP_VIEW_HEIGHT // TILE_SIZE  # 22
 
-LINE_HEIGHT: int = 10
+# 文字は美咲フォント（8px）を FONT_SCALE 倍に拡大して描く。行の高さも同じ倍率にする
+FONT_SCALE: int = 2
+LINE_HEIGHT: int = 20
 TRANSPARENT_COLOR: int = 0
 ANIMATION_TICKS: int = 15  # 待機アニメーションの1コマのフレーム数（0.5秒）
 

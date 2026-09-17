@@ -24,8 +24,8 @@ COLOR_CURSOR = 5
 COLOR_UP = 11
 COLOR_DOWN = 8
 
-X, Y, W, H = 24, config.MAP_TOP + 2, 272, 116
-CHOICE_X, CHOICE_W = X + 118, 150
+X, Y, W, H = 48, config.MAP_TOP + 4, 544, 232
+CHOICE_X, CHOICE_W = X + 236, 300
 CHOICE_ROWS = 7
 
 
@@ -89,58 +89,59 @@ class EquipmentView:
 
     def draw(self) -> None:
         draw_window(X, Y, W, H)
-        font.draw_text(X + 8, Y + 5, "装備", COLOR_TEXT)
-        pyxel.line(X + 4, Y + 15, X + W - 5, Y + 15, COLOR_LINE)
+        font.draw_text(X + 16, Y + 10, "装備", COLOR_TEXT)
+        pyxel.line(X + 8, Y + 30, X + W - 10, Y + 30, COLOR_LINE)
 
         equipment = self.state.player.equipment
         for i, slot in enumerate(SLOTS):
-            row_y = Y + 20 + i * (config.LINE_HEIGHT + 2)
+            row_y = Y + 40 + i * (config.LINE_HEIGHT + 4)
             if i == self.slot_cursor:
                 color = COLOR_CURSOR if not self.choosing else 1
-                pyxel.rect(X + 4, row_y - 1, W - 8, config.LINE_HEIGHT, color)
-            font.draw_text(X + 8, row_y, SLOT_NAMES[slot], COLOR_SUBTEXT)
+                pyxel.rect(X + 8, row_y - 2, W - 16, config.LINE_HEIGHT, color)
+            font.draw_text(X + 16, row_y, SLOT_NAMES[slot], COLOR_SUBTEXT)
             item = equipment[slot]
             if item is None:
-                font.draw_text(X + 32, row_y, "―", COLOR_SUBTEXT)
+                font.draw_text(X + 64, row_y, "―", COLOR_SUBTEXT)
             else:
-                draw_item_row(X + 26, row_y, item, equipped=False)
+                draw_item_row(X + 52, row_y, item, equipped=False)
 
         stats = self.state.player_combat_stats()
-        pyxel.line(X + 4, Y + H - 26, X + W - 5, Y + H - 26, COLOR_LINE)
-        font.draw_text(X + 8, Y + H - 22, f"攻撃力 {stats.atk}  防御力 {stats.defense}", COLOR_TEXT)
+        pyxel.line(X + 8, Y + H - 52, X + W - 10, Y + H - 52, COLOR_LINE)
+        power = f"攻撃力 {stats.atk}  防御力 {stats.defense}"
+        font.draw_text(X + 16, Y + H - 44, power, COLOR_TEXT)
         hint = "決定: 付け替える  Esc: 戻る" if self.choosing else "決定: 選ぶ  E / Esc: 閉じる"
-        font.draw_text(X + 8, Y + H - 11, hint, COLOR_SUBTEXT)
+        font.draw_text(X + 16, Y + H - 22, hint, COLOR_SUBTEXT)
 
         if self.choosing:
             self._draw_choices()
 
     def _draw_choices(self) -> None:
         choices = self.choices()
-        h = 26 + min(len(choices), CHOICE_ROWS) * config.LINE_HEIGHT
-        y = Y + 16
+        h = 52 + min(len(choices), CHOICE_ROWS) * config.LINE_HEIGHT
+        y = Y + 32
         draw_window(CHOICE_X, y, CHOICE_W, h)
         start = max(0, self.choice_cursor - CHOICE_ROWS + 1)
         for row, choice in enumerate(choices[start : start + CHOICE_ROWS]):
-            row_y = y + 4 + row * config.LINE_HEIGHT
+            row_y = y + 8 + row * config.LINE_HEIGHT
             if start + row == self.choice_cursor:
-                pyxel.rect(CHOICE_X + 3, row_y - 1, CHOICE_W - 6, config.LINE_HEIGHT, COLOR_CURSOR)
+                pyxel.rect(CHOICE_X + 6, row_y - 2, CHOICE_W - 12, config.LINE_HEIGHT, COLOR_CURSOR)
             if choice is None:
-                font.draw_text(CHOICE_X + 8, row_y, "（外す）", COLOR_TEXT)
+                font.draw_text(CHOICE_X + 16, row_y, "（外す）", COLOR_TEXT)
             else:
-                draw_item_row(CHOICE_X + 4, row_y, choice, equipped=False)
+                draw_item_row(CHOICE_X + 8, row_y, choice, equipped=False)
 
         # 付け替えたときの攻撃力・防御力（未鑑定なら ? ）
         current = self.state.player_combat_stats()
         preview = self.state.preview_stats(self.slot, choices[self.choice_cursor])
-        preview_y = y + h - 12
-        font.draw_text(CHOICE_X + 8, preview_y, "攻", COLOR_SUBTEXT)
-        font.draw_text(CHOICE_X + 76, preview_y, "防", COLOR_SUBTEXT)
+        preview_y = y + h - 24
+        font.draw_text(CHOICE_X + 16, preview_y, "攻", COLOR_SUBTEXT)
+        font.draw_text(CHOICE_X + 152, preview_y, "防", COLOR_SUBTEXT)
         if preview is None:
-            font.draw_text(CHOICE_X + 20, preview_y, f"{current.atk}→?", COLOR_TEXT)
-            font.draw_text(CHOICE_X + 88, preview_y, f"{current.defense}→?", COLOR_TEXT)
+            font.draw_text(CHOICE_X + 40, preview_y, f"{current.atk}→?", COLOR_TEXT)
+            font.draw_text(CHOICE_X + 176, preview_y, f"{current.defense}→?", COLOR_TEXT)
             return
-        self._draw_change(CHOICE_X + 20, preview_y, current.atk, preview.atk)
-        self._draw_change(CHOICE_X + 88, preview_y, current.defense, preview.defense)
+        self._draw_change(CHOICE_X + 40, preview_y, current.atk, preview.atk)
+        self._draw_change(CHOICE_X + 176, preview_y, current.defense, preview.defense)
 
     @staticmethod
     def _draw_change(x: int, y: int, before: int, after: int) -> None:

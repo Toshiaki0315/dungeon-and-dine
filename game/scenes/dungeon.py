@@ -565,29 +565,29 @@ class DungeonScene:
         self.command_bar.draw(
             focused=self.mode == Mode.COMMAND_BAR, is_enabled=self._is_command_enabled
         )
-        draw_recent(self.state.log, top + 15)
+        draw_recent(self.state.log, top + 30)  # コマンドバー（高さ22）の下に置く
 
     def _draw_player_statuses(self) -> None:
         names = self.state.player_status_names()
         if not names:
             return
         text = " ".join(names)
-        pyxel.rect(0, config.MAP_TOP, font.text_width(text) + 4, 10, 0)
-        font.draw_text(2, config.MAP_TOP + 1, text, COLOR_STATUS)
+        pyxel.rect(0, config.MAP_TOP, font.text_width(text) + 8, 20, 0)
+        font.draw_text(4, config.MAP_TOP + 2, text, COLOR_STATUS)
 
     def _draw_floor_banner(self) -> None:
         label = self._floor_label()
         width = font.text_width(label)
         x = (config.SCREEN_WIDTH - width) // 2
         y = config.MAP_TOP + (config.MAP_VIEW_HEIGHT - config.TILE_SIZE) // 2
-        pyxel.rect(x - 6, y - 4, width + 12, 16, 0)
-        pyxel.rectb(x - 6, y - 4, width + 12, 16, COLOR_SUBTEXT)
+        pyxel.rect(x - 12, y - 8, width + 24, 32, 0)
+        pyxel.rectb(x - 12, y - 8, width + 24, 32, COLOR_SUBTEXT)
         font.draw_text(x, y, label, COLOR_TEXT)
 
     def _draw_debug(self) -> None:
         s = self.state
         text = f"SEED {s.run_seed} TURN {s.turn} POS {s.player.x},{s.player.y}"
         width = font.text_width(text)
-        x = config.SCREEN_WIDTH - width - 2
-        pyxel.rect(x - 2, config.MAP_TOP, width + 4, 10, 0)
-        font.draw_text(x, config.MAP_TOP + 1, text, COLOR_DEBUG)
+        x = config.SCREEN_WIDTH - width - 4
+        pyxel.rect(x - 4, config.MAP_TOP, width + 8, 20, 0)
+        font.draw_text(x, config.MAP_TOP + 2, text, COLOR_DEBUG)

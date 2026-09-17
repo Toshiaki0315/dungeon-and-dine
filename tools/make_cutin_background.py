@@ -20,7 +20,10 @@ import pyxel  # noqa: E402
 
 from game import config  # noqa: E402
 
-WIDTH, HEIGHT = config.SCREEN_WIDTH, 140  # カットインの背景（仕様書 2.4）
+# カットインの背景（仕様書 2.4）。等倍の素材の大きさで作る。画面の大きさとは別で、
+# ゲーム側（ui/cooking_cutin.py）が ART_SCALE 倍に拡大して描く。
+# config.SCREEN_WIDTH から決めると、画面を広げたときに下の座標のまま絵の幅だけ変わって構図が崩れる。
+WIDTH, HEIGHT = 320, 140
 GROUND_TOP = 104
 
 # 料理用パレット（data/palettes.json）での見え方を想定した色番号

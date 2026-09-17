@@ -18,8 +18,8 @@ COLOR_HINT = 13
 COLOR_HIGHLIGHT = 10  # 黄色
 
 RECENT_LINES = 2
-HISTORY_LINES = 14
-TEXT_WIDTH = config.SCREEN_WIDTH - 8
+HISTORY_LINES = 20
+TEXT_WIDTH = config.SCREEN_WIDTH - 16
 
 WrappedLine = tuple[str, bool]  # (行, 行頭で強調中か)
 
@@ -82,7 +82,7 @@ def draw_recent(log: MessageLog, y: int) -> None:
     lines = _wrapped(log.latest(RECENT_LINES))[-RECENT_LINES:]
     for i, line in enumerate(lines):
         color = COLOR_TEXT if i == len(lines) - 1 else COLOR_OLD
-        draw_markup_line(4, y + i * config.LINE_HEIGHT, line, color)
+        draw_markup_line(8, y + i * config.LINE_HEIGHT, line, color)
 
 
 class LogHistoryView:
@@ -105,10 +105,10 @@ class LogHistoryView:
         return False
 
     def draw(self) -> None:
-        font.draw_text(4, 3, f"ログ履歴  {len(self.log)}/{self.log.capacity}", COLOR_TEXT)
+        font.draw_text(8, 6, f"ログ履歴  {len(self.log)}/{self.log.capacity}", COLOR_TEXT)
         lines = _wrapped(self.log.entries)
         end = len(lines) - self.scroll
         for i, line in enumerate(lines[max(0, end - HISTORY_LINES) : end]):
-            draw_markup_line(4, 16 + i * config.LINE_HEIGHT, line, COLOR_TEXT)
+            draw_markup_line(8, 32 + i * config.LINE_HEIGHT, line, COLOR_TEXT)
         hint = "↑↓: スクロール  L / Esc: 閉じる"
-        font.draw_text(4, config.SCREEN_HEIGHT - 11, hint, COLOR_HINT)
+        font.draw_text(8, config.SCREEN_HEIGHT - 22, hint, COLOR_HINT)

@@ -32,14 +32,14 @@ COMMANDS: tuple[CommandDef, ...] = (
     CommandDef("map", "地図"),
 )
 
-BAR_Y = config.MAP_TOP + config.MAP_VIEW_HEIGHT + 2
-BUTTON_H = 11
+BAR_Y = config.MAP_TOP + config.MAP_VIEW_HEIGHT + 4
+BUTTON_H = 22
 BUTTON_W = config.SCREEN_WIDTH // len(COMMANDS)
 
 
 def button_rect(index: int) -> tuple[int, int, int, int]:
     """ボタンの (x, y, w, h)。"""
-    return (index * BUTTON_W + 1, BAR_Y, BUTTON_W - 2, BUTTON_H)
+    return (index * BUTTON_W + 2, BAR_Y, BUTTON_W - 4, BUTTON_H)
 
 
 def hit_test(px: int, py: int) -> int | None:
@@ -75,4 +75,4 @@ class CommandBar:
                 pyxel.rectb(x, y, w, h, COLOR_FRAME)
             color = COLOR_TEXT if is_enabled(command.id) else COLOR_DISABLED
             text_x = x + (w - font.text_width(command.label)) // 2
-            font.draw_text(text_x, y + 2, command.label, color)
+            font.draw_text(text_x, y + 3, command.label, color)
