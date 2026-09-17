@@ -182,8 +182,8 @@ def test_cancelling_the_selection_does_not_consume_a_turn():
 def test_unknown_combination_makes_the_mystery_object_and_is_recorded():
     state = new_state()
     light_campfire(state)
-    herbs = [give(state, "herb"), give(state, "herb")]
-    plan = state.plan_cooking(herbs)
+    herbs = give(state, "herb", count=2)  # 1枠にまとめた薬草から2つ使う
+    plan = state.plan_cooking([herbs, herbs])
     assert plan is not None and plan.matched is None and plan.success is False
     state.apply_cooking(plan)
     assert [i.id for i in state.inventory.items] == ["mystery_food"]
@@ -281,3 +281,20 @@ def test_memo_gives_gold_when_every_recipe_is_known():
         state.notebook.discover(recipe_id)
     state.use_item(give(state, "memo"))
     assert state.player.gold == COOKING.memo_gold
+
+
+def test_a_stack_can_only_provide_as_many_materials_as_it_holds():
+    state = new_state()
+    light_campfire(state)
+    herbs = give(state, "herb", count=2)
+    assert state.plan_cooking([herbs, herbs, herbs]) is None
+    assert state.plan_cooking([herbs, herbs]) is not None
+
+
+def test_a_stack_of_raw_meat_rots_together():
+    state = new_state()
+    meat = give(state, "rat_meat", count=3, rot_at=state.turn + 1)
+    state.wait()
+    state.wait()
+    assert [(i.id, i.count) for i in state.inventory.items] == [("rotten_meat", 3)]
+    assert meat not in state.inventory.items

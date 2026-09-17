@@ -63,6 +63,18 @@ def test_run_round_trip_restores_the_player_and_inventory(tmp_path):
     assert restored.inventory.capacity == state.inventory.capacity
 
 
+def test_run_round_trip_keeps_stacks_and_the_bag_bonus(tmp_path):
+    state = played_state()
+    state.inventory.add(ItemInstance(CATALOG.items["herb"], count=3))
+    state.inventory.capacity += 5
+    state.bag_bonus = 5
+    restored = round_trip(tmp_path, state)
+    assert [(i.id, i.count) for i in restored.inventory.items] == [
+        (i.id, i.count) for i in state.inventory.items
+    ]
+    assert (restored.bag_bonus, restored.inventory.capacity) == (5, state.inventory.capacity)
+
+
 def test_run_round_trip_keeps_the_appearance(tmp_path):
     state = played_state()
     state.player.appearance = "fighter"

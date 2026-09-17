@@ -97,7 +97,7 @@ IMPLEMENTED_EFFECTS = frozenset(
     {
         "heal", "restore_mp", "restore_mp_full", "cure", "satiety", "inflict", "status",
         "max_hp_up", "mystery_penalty", "recipe_memo", "fire_blast", "identify", "holy_water",
-        "uncurse_all", "return",
+        "uncurse_all", "return", "expand_inventory",
     }
 )  # fmt: skip
 
@@ -155,7 +155,9 @@ class GameParams:
     base_camp: BaseCampParams
     fov: FovParams
     inventory_capacity: int
-    inventory_stack_max: int
+    inventory_stack_max: int  # 矢の1枠あたりの上限
+    inventory_item_stack_max: int  # 同じ消耗品の1枠あたりの上限
+    inventory_bag_bonus_max: int  # 背負い袋で増やせる枠の上限（1回の挑戦あたり）
     areas: tuple[Area, ...]
     boss_interval: int  # 何階ごとにボスが出るか（floors.json の "cycle"）
     ending_floor: int  # ここのボスを倒すとエンディング。これより下へも潜れる
@@ -187,6 +189,8 @@ class GameParams:
             fov=FovParams.from_dict(balance["fov"]),
             inventory_capacity=int(balance["inventory"]["capacity"]),
             inventory_stack_max=int(balance["inventory"]["stack_max"]),
+            inventory_item_stack_max=int(balance["inventory"]["item_stack_max"]),
+            inventory_bag_bonus_max=int(balance["inventory"]["bag_bonus_max"]),
             areas=tuple(Area.from_dict(area) for area in data["floors"]["areas"]),
             boss_interval=int(data["floors"]["cycle"]["boss_interval"]),
             ending_floor=int(data["floors"]["cycle"]["ending_floor"]),
@@ -251,6 +255,11 @@ class CookPlan:
         return self.matched if self.success else None
 
 
+def _times_chosen(materials: Sequence[ItemInstance], item: ItemInstance) -> int:
+    """同じ枠（まとめた材料）から何個選んだか。持っている数までしか使えない。"""
+    return sum(1 for m in materials if m is item)
+
+
 class GameState:
     def __init__(
         self,
@@ -266,7 +275,10 @@ class GameState:
         self.rng = random.Random(run_seed)  # 戦闘や敵AIなど、プレイ中に使う乱数
         self.player = Player.from_params(params.player)
         self.player.skills = skills_up_to_level(self.player.level, self.catalog.skills)
-        self.inventory = Inventory(params.inventory_capacity, params.inventory_stack_max)
+        self.inventory = Inventory(
+            params.inventory_capacity, params.inventory_stack_max, params.inventory_item_stack_max
+        )
+        self.bag_bonus = 0  # 背負い袋で増やした持ち物の枠（この挑戦のあいだだけ）
         self.scheduler = TurnScheduler()
         self.log = MessageLog()
         self.notebook = notebook if notebook is not None else Notebook()  # ランをまたいで残る
@@ -373,8 +385,9 @@ class GameState:
     def take_loadout(self, loadout: Loadout) -> None:
         """拠点に置いてある持ち物と装備を持って、挑戦を始める（仕様書 12.3）。"""
         self.inventory.capacity = loadout.items.capacity
-        for item in loadout.items.items:
-            self.inventory.add(item)
+        # 背負い袋で広げた枠のまま持ち帰った場合、拠点の枠より多く持っていることがある。
+        # add() だと枠を超えた分が入らず消えてしまうので、そのまま引き継ぐ
+        self.inventory.items.extend(loadout.items.items)
         for slot, item in loadout.equipment.items():
             if item is not None:
                 self._set_equipment(slot, item)
@@ -467,7 +480,7 @@ class GameState:
             self.is_game_over
             or heat is None
             or not MIN_MATERIALS <= len(materials) <= MAX_MATERIALS
-            or len({id(m) for m in materials}) != len(materials)
+            or any(_times_chosen(materials, m) > m.count for m in materials)
             or any(m not in candidates for m in materials)
         ):
             return None
@@ -714,6 +727,9 @@ class GameState:
             return False
         targets = self.item_targets(item)
         if targets is not None and target not in targets:
+            return False
+        if not self._bag_has_room(definition):
+            self.log.add("これ以上は袋を広げられない。")
             return False
 
         self.inventory.take_one(item)
@@ -1064,6 +1080,11 @@ class GameState:
             (i for i in self.inventory.items if i.definition.category == CATEGORY_AMMO), None
         )
 
+    def _bag_has_room(self, definition: ItemDef) -> bool:
+        """背負い袋で、まだ枠を増やせるか（1回の挑戦で増やせる量には上限がある）。"""
+        gain = sum(e.value for e in definition.effects if e.type == "expand_inventory")
+        return gain == 0 or self.bag_bonus + gain <= self.params.inventory_bag_bonus_max
+
     def _apply_item_effect(self, effect: Effect, target: ItemInstance | None) -> None:
         p = self.player
         if effect.type == "heal":
@@ -1133,6 +1154,10 @@ class GameState:
                 self.log.add(f"{highlight(target.name)}の呪いが解けた。")
             self.log.add(f"{highlight(target.name)}に聖なる力が宿った。")
             self.update_fov()
+        elif effect.type == "expand_inventory":
+            self.inventory.capacity += effect.value
+            self.bag_bonus += effect.value
+            self.log.add(f"持ち物の枠が{effect.value}増えた（この挑戦のあいだ）。")
         elif effect.type == "return":
             self.returned = True
             self.log.add(f"{p.name}は光に包まれ、地上へ引き上げられた。")
@@ -1422,7 +1447,7 @@ class GameState:
             rotten_id = item.definition.rotten_id
             if item.rot_at is None or rotten_id is None or turn < item.rot_at:
                 return None
-            return ItemInstance(self.catalog.items[rotten_id])
+            return ItemInstance(self.catalog.items[rotten_id], item.count)  # まとめた分は一緒に腐る
 
         items = self.inventory.items
         for index, item in enumerate(items):

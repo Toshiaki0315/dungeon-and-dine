@@ -124,9 +124,11 @@ def inventory_from_dict(
     data: Mapping[str, Any],
     catalog: Catalog,
     traits: Mapping[str, EquipmentTrait],
-    stack_max: int,
+    params: GameParams,
 ) -> Inventory:
-    inventory = Inventory(int(data["capacity"]), stack_max)
+    inventory = Inventory(
+        int(data["capacity"]), params.inventory_stack_max, params.inventory_item_stack_max
+    )
     inventory.items = [item_from_dict(d, catalog, traits) for d in data["items"]]
     return inventory
 
@@ -192,15 +194,14 @@ def meta_from_dict(
     data: Mapping[str, Any], params: GameParams, camp: BaseCampParams
 ) -> MetaProgress:
     catalog, traits = params.catalog, traits_by_id(params)
-    stack_max = params.inventory_stack_max
-    items = inventory_from_dict(data["loadout"]["items"], catalog, traits, stack_max)
+    items = inventory_from_dict(data["loadout"]["items"], catalog, traits, params)
     notebook = Notebook(
         discovered=list(data["notebook"]["discovered"]),
         failures=[tuple(key) for key in data["notebook"]["failures"]],
     )
     return MetaProgress(
         loadout=Loadout(items, equipment_from_dict(data["loadout"]["equipment"], items.items)),
-        storage=inventory_from_dict(data["storage"], catalog, traits, stack_max),
+        storage=inventory_from_dict(data["storage"], catalog, traits, params),
         notebook=notebook,
         funds=int(data["funds"]),
         inventory_expansions=int(data["inventory_expansions"]),
@@ -231,11 +232,17 @@ def load_meta(save_dir: Path, params: GameParams, camp: BaseCampParams) -> MetaP
     """meta.json を読み込む。ないときや壊れているときは、新しいデータを返す。"""
     data = read_json(save_dir / META_FILE)
     if data is None or data.get("version") != META_VERSION:
-        return MetaProgress.new(params.inventory_capacity, params.inventory_stack_max, camp)
+        return new_meta(params, camp)
     try:
         return meta_from_dict(data, params, camp)
     except (KeyError, TypeError, ValueError):
-        return MetaProgress.new(params.inventory_capacity, params.inventory_stack_max, camp)
+        return new_meta(params, camp)
+
+
+def new_meta(params: GameParams, camp: BaseCampParams) -> MetaProgress:
+    return MetaProgress.new(
+        params.inventory_capacity, params.inventory_stack_max, camp, params.inventory_item_stack_max
+    )
 
 
 # --- run.json ---
@@ -418,6 +425,7 @@ def state_to_dict(state: GameState) -> dict[str, Any]:
         "rng": [rng_version, list(rng_internal), rng_gauss],
         "player": player_to_dict(state.player, items),
         "inventory": inventory_to_dict(state.inventory),
+        "bag_bonus": state.bag_bonus,
         "floor": floor_to_dict(state.floor),
         "fog": state.fog.explored_bits(),
         "log": state.log.entries,
@@ -429,8 +437,7 @@ def state_from_dict(data: Mapping[str, Any], params: GameParams, notebook: Noteb
 
     catalog, traits = params.catalog, traits_by_id(params)
     state = GameState(int(data["run_seed"]), params, notebook, generate=False)
-    stack_max = params.inventory_stack_max
-    state.inventory = inventory_from_dict(data["inventory"], catalog, traits, stack_max)
+    state.inventory = inventory_from_dict(data["inventory"], catalog, traits, params)
     state.player = player_from_dict(data["player"], state.inventory.items)
     state.floor = floor_from_dict(data["floor"], catalog, traits)
     state.area = area_of(params, state.floor.number)
@@ -438,6 +445,7 @@ def state_from_dict(data: Mapping[str, Any], params: GameParams, notebook: Noteb
     state.fog.restore_bits(data["fog"])
     state.scheduler.turn = int(data["turn"])
     state.uid_counter = int(data["uid_counter"])
+    state.bag_bonus = int(data.get("bag_bonus", 0))  # 背負い袋を足す前のセーブデータには無い
     rng_version, rng_internal, rng_gauss = data["rng"]
     state.rng.setstate((int(rng_version), tuple(int(v) for v in rng_internal), rng_gauss))
     for entry in data["log"]:

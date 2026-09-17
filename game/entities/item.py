@@ -30,6 +30,13 @@ CATEGORY_MYSTERY = "mystery"  # 謎の物体
 EDIBLE_CATEGORIES = frozenset(
     {CATEGORY_FOOD, CATEGORY_INGREDIENT, CATEGORY_COOKED, CATEGORY_DISH, CATEGORY_MYSTERY}
 )
+# 持ち物の1枠に、同じものを複数まとめられる消耗品の種類（仕様書 11.1）
+STACKING_CATEGORIES = EDIBLE_CATEGORIES | {
+    CATEGORY_HERB,
+    CATEGORY_SCROLL,
+    CATEGORY_TOOL,
+    CATEGORY_MEMO,
+}
 
 SLOT_WEAPON = "weapon"
 SLOT_SHIELD = "shield"
@@ -227,6 +234,14 @@ class ItemDef:
         return "使う"
 
 
+def stacks_in_inventory(definition: ItemDef) -> bool:
+    """同じ消耗品として1枠にまとめられるか（矢のような stackable は別の上限で扱う）。
+
+    使える回数を個体ごとに持つもの（携帯コンロ）は、まとめると回数が混ざるので対象外。
+    """
+    return definition.category in STACKING_CATEGORIES and definition.charges == 0
+
+
 @dataclass(eq=False)
 class ItemInstance:
     definition: ItemDef
@@ -263,7 +278,7 @@ class ItemInstance:
         if definition.charges:
             return f"{definition.name}（残り{self.charges}回）"
         if not definition.is_equipment:
-            return definition.name
+            return f"{definition.name}×{self.count}" if self.count > 1 else definition.name
         if not self.identified:
             return f"？の{definition.name}"
         name = f"{definition.name}{self.modifier:+d}" if self.modifier else definition.name

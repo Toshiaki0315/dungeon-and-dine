@@ -72,8 +72,10 @@ class CookingView:
         if self.cursor >= len(candidates):
             return self._cook()
         item = candidates[self.cursor]
-        if item in self.selected:
-            self.selected.remove(item)
+        picked = self._picked(item)
+        # まとめて持っている材料は、持っている数まで続けて選べる。それ以上押すと選び直しになる
+        if picked and (picked >= item.count or len(self.selected) >= MAX_MATERIALS):
+            self.selected = [m for m in self.selected if m is not item]
             self.message = ""
         elif len(self.selected) >= MAX_MATERIALS:
             self.message = f"材料は{MAX_MATERIALS}つまで。"
@@ -81,6 +83,9 @@ class CookingView:
             self.selected.append(item)
             self.message = ""
         return None
+
+    def _picked(self, item: ItemInstance) -> int:
+        return sum(1 for m in self.selected if m is item)
 
     def _cook(self) -> list[ItemInstance] | None:
         if MIN_MATERIALS <= len(self.selected) <= MAX_MATERIALS:
@@ -119,9 +124,10 @@ class CookingView:
             row_y = y + 38 + row * config.LINE_HEIGHT
             if index == self.cursor:
                 pyxel.rect(x + 8, row_y - 2, w - 16, config.LINE_HEIGHT, COLOR_CURSOR)
-            if item is not None and item in self.selected:
-                number = self.selected.index(item) + 1
-                font.draw_text(x + 12, row_y, str(number), COLOR_NUMBER)
+            picked = self._picked(item) if item is not None else 0
+            if picked:
+                # まとめて持っている材料は、いくつ選んだかを示す
+                font.draw_text(x + 12, row_y, str(picked), COLOR_NUMBER)
             color = (
                 COLOR_TEXT
                 if item is not None or len(self.selected) >= MIN_MATERIALS
@@ -142,7 +148,7 @@ class CookingView:
             row_y = y + 40 + slot * config.LINE_HEIGHT
             if slot < len(self.selected):
                 font.draw_text(x + 12, row_y, f"{slot + 1}", COLOR_NUMBER)
-                font.draw_text(x + 32, row_y, self.selected[slot].name, COLOR_TEXT)
+                font.draw_text(x + 32, row_y, self.selected[slot].definition.name, COLOR_TEXT)
             else:
                 font.draw_text(x + 32, row_y, "――", COLOR_SUBTEXT)
 

@@ -4,7 +4,9 @@ from game import data_loader
 from game.entities.item import FloorItem, ItemInstance
 from game.entities.monster import MODE_CHASE, Monster
 from game.systems.game_state import GameParams, GameState, MoveResult
+from game.systems.inventory import Inventory
 from game.systems.message_log import strip_markup
+from game.systems.meta import Loadout
 from game.systems.progression import exp_to_next_level
 from game.systems.traps import Trap
 from game.world.direction import Direction
@@ -258,7 +260,7 @@ def test_pick_up_item_when_stepping_on_it():
 def test_full_inventory_leaves_item_on_floor():
     state = new_state()
     for _ in range(state.inventory.capacity):
-        state.inventory.add(ItemInstance(CATALOG.items["herb"]))
+        state.inventory.add(ItemInstance(CATALOG.items["knife"]))  # 装備はまとめられない
     place_item(state, "ration")
     state.move_player(Direction.RIGHT)
     assert len(state.inventory) == state.inventory.capacity
@@ -431,3 +433,30 @@ def test_leaving_room_keeps_it_known():
     state.player.x, state.player.y = state.floor.stairs
     state.update_fov()
     assert all(state.fog.state(*cell) == Visibility.KNOWN for cell in start_room.cells())
+
+
+# --- 大きな背負い袋 ---
+
+
+def test_big_bag_widens_the_inventory_for_this_run():
+    state = new_state()
+    before = state.inventory.capacity
+    bag = ItemInstance(CATALOG.items["big_bag"], count=3)
+    state.inventory.add(bag)
+    assert state.use_item(bag)
+    assert state.inventory.capacity == before + 5
+    assert state.use_item(bag)
+    assert state.inventory.capacity == before + PARAMS.inventory_bag_bonus_max
+    assert not state.use_item(bag)  # 上限に達したら使えず、袋も減らない
+    assert bag.count == 1
+    assert "これ以上は袋を広げられない" in log_text(state)
+
+
+def test_items_beyond_the_camp_capacity_are_carried_into_the_next_run():
+    state = new_state()
+    loadout = Loadout(Inventory(2, PARAMS.inventory_stack_max))
+    loadout.items.items = [
+        ItemInstance(CATALOG.items["knife"]) for _ in range(4)
+    ]  # 袋で広げて持ち帰った
+    state.take_loadout(loadout)
+    assert len(state.inventory.items) == 4

@@ -198,7 +198,9 @@
   },
   "inventory": {
     "capacity": 20,
-    "stack_max": 99
+    "stack_max": 99,
+    "item_stack_max": 5,
+    "bag_bonus_max": 10
   },
   "input": {
     "repeat_interval_sec": 0.15

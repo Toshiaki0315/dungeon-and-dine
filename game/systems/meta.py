@@ -131,10 +131,16 @@ class MetaProgress:
     scores: list[ScoreEntry] = field(default_factory=list)
 
     @classmethod
-    def new(cls, inventory_capacity: int, stack_max: int, params: BaseCampParams) -> MetaProgress:
+    def new(
+        cls,
+        inventory_capacity: int,
+        stack_max: int,
+        params: BaseCampParams,
+        item_stack_max: int = 1,
+    ) -> MetaProgress:
         return cls(
-            loadout=Loadout(Inventory(inventory_capacity, stack_max)),
-            storage=Inventory(params.storage_capacity, stack_max),
+            loadout=Loadout(Inventory(inventory_capacity, stack_max, item_stack_max)),
+            storage=Inventory(params.storage_capacity, stack_max, item_stack_max),
         )
 
     def record_run(self, floor_number: int) -> None:

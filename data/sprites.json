@@ -293,262 +293,267 @@
       "v": 112,
       "frames": 1
     },
-    "item_memo": {
+    "item_bag": {
       "u": 144,
+      "v": 112,
+      "frames": 1
+    },
+    "item_memo": {
+      "u": 160,
       "v": 112,
       "frames": 1
     },
     "item_gold": {
-      "u": 160,
+      "u": 176,
       "v": 112,
       "frames": 1
     },
     "armor_shield": {
-      "u": 176,
+      "u": 192,
       "v": 112,
       "frames": 1
     },
     "armor_helmet": {
-      "u": 192,
+      "u": 208,
       "v": 112,
       "frames": 1
     },
     "armor_body": {
-      "u": 208,
+      "u": 224,
       "v": 112,
       "frames": 1
     },
     "armor_shoes": {
-      "u": 224,
+      "u": 240,
       "v": 112,
       "frames": 1
     },
     "weapon_knife": {
-      "u": 240,
-      "v": 112,
+      "u": 0,
+      "v": 128,
       "frames": 1
     },
     "weapon_spear": {
-      "u": 0,
+      "u": 16,
       "v": 128,
       "frames": 1
     },
     "weapon_whip": {
-      "u": 16,
+      "u": 32,
       "v": 128,
       "frames": 1
     },
     "weapon_bow": {
-      "u": 32,
+      "u": 48,
       "v": 128,
       "frames": 1
     },
     "weapon_katana": {
-      "u": 48,
+      "u": 64,
       "v": 128,
       "frames": 1
     },
     "item_meat": {
-      "u": 64,
+      "u": 80,
       "v": 128,
       "frames": 1
     },
     "item_grilled_meat": {
-      "u": 80,
+      "u": 96,
       "v": 128,
       "frames": 1
     },
     "item_jelly": {
-      "u": 96,
+      "u": 112,
       "v": 128,
       "frames": 1
     },
     "item_wing": {
-      "u": 112,
+      "u": 128,
       "v": 128,
       "frames": 1
     },
     "item_mushroom": {
-      "u": 128,
+      "u": 144,
       "v": 128,
       "frames": 1
     },
     "item_bone": {
-      "u": 144,
+      "u": 160,
       "v": 128,
       "frames": 1
     },
     "item_shell": {
-      "u": 160,
+      "u": 176,
       "v": 128,
       "frames": 1
     },
     "item_salt": {
-      "u": 176,
+      "u": 192,
       "v": 128,
       "frames": 1
     },
     "item_essence": {
-      "u": 192,
+      "u": 208,
       "v": 128,
       "frames": 1
     },
     "item_dish": {
-      "u": 208,
+      "u": 224,
       "v": 128,
       "frames": 1
     },
     "item_mystery": {
-      "u": 224,
-      "v": 128,
-      "frames": 1
-    },
-    "item_rotten_meat": {
       "u": 240,
       "v": 128,
       "frames": 1
     },
-    "trap_pit": {
+    "item_rotten_meat": {
       "u": 0,
       "v": 144,
+      "frames": 1
+    },
+    "trap_pit": {
+      "u": 0,
+      "v": 160,
       "frames": 1
     },
     "trap_poison_arrow": {
       "u": 16,
-      "v": 144,
+      "v": 160,
       "frames": 1
     },
     "trap_sleep_gas": {
       "u": 32,
-      "v": 144,
+      "v": 160,
       "frames": 1
     },
     "trap_warp": {
       "u": 48,
-      "v": 144,
+      "v": 160,
       "frames": 1
     },
     "trap_hunger": {
       "u": 64,
-      "v": 144,
+      "v": 160,
       "frames": 1
     },
     "trap_rust": {
       "u": 80,
-      "v": 144,
+      "v": 160,
       "frames": 1
     },
     "trap_alarm": {
       "u": 96,
-      "v": 144,
+      "v": 160,
       "frames": 1
     },
     "floor_moss": {
       "u": 0,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "corridor_moss": {
       "u": 16,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "wall_moss": {
       "u": 32,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "floor_catacomb": {
       "u": 48,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "corridor_catacomb": {
       "u": 64,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "wall_catacomb": {
       "u": 80,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "floor_mine": {
       "u": 96,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "corridor_mine": {
       "u": 112,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "wall_mine": {
       "u": 128,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "floor_abyss": {
       "u": 144,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "corridor_abyss": {
       "u": 160,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "wall_abyss": {
       "u": 176,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "floor_bottom": {
       "u": 192,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "corridor_bottom": {
       "u": 208,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "wall_bottom": {
       "u": 224,
-      "v": 160,
+      "v": 176,
       "frames": 1
     },
     "devourer": {
       "u": 0,
-      "v": 176,
+      "v": 192,
       "frames": 2,
       "w": 32,
       "h": 32
     },
     "bone_sovereign": {
       "u": 64,
-      "v": 176,
+      "v": 192,
       "frames": 2,
       "w": 32,
       "h": 32
     },
     "magma_tyrant": {
       "u": 128,
-      "v": 176,
+      "v": 192,
       "frames": 2,
       "w": 32,
       "h": 32
     },
     "void_seraph": {
       "u": 192,
-      "v": 176,
+      "v": 192,
       "frames": 2,
       "w": 32,
       "h": 32
     },
     "labyrinth_maker": {
       "u": 0,
-      "v": 208,
+      "v": 224,
       "frames": 2,
       "w": 32,
       "h": 32
