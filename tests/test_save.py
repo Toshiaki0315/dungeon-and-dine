@@ -6,7 +6,6 @@ from game.entities.item import SLOT_WEAPON, ItemInstance
 from game.entities.player import DEFAULT_APPEARANCE
 from game.systems import save
 from game.systems.cooking import Notebook
-from game.systems.meta import MetaProgress
 from game.world.direction import Direction
 from game.world.floor import Campfire
 from tests.test_game_state import (
@@ -169,7 +168,7 @@ def test_writing_leaves_no_temporary_file(tmp_path):
 
 
 def filled_meta():
-    meta = MetaProgress.new(PARAMS.inventory_capacity, PARAMS.inventory_stack_max, CAMP)
+    meta = save.new_meta(PARAMS, CAMP)
     meta.funds = 1234
     knife = ItemInstance(CATALOG.items["knife"], modifier=2)
     meta.loadout.items.add(knife)

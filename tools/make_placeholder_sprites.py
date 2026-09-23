@@ -7,6 +7,8 @@ assets/resources.pyxres のイメージバンク0に 16×16（ボスは32×32）
 
 - 絵のデータは tools/sprite_art/ にある。
 - 既存の resources.pyxres があれば読み込んでから描き込むので、サウンドなど他の素材は残る。
+  ただし、絵を描き込むイメージバンクは消してから使う（1枚に入りきらないと次のバンクへ送るため、
+  バンク1以降に別の素材を置くときは、この上書きに注意すること）。
 - sprites.json は上書きする。本素材に差し替えたあとは実行しないこと。
 """
 
@@ -109,9 +111,11 @@ def main() -> None:
     if config.RESOURCE_PATH.exists():
         pyxel.load(str(config.RESOURCE_PATH))
 
+    banks = len(pyxel.images)
     image = pyxel.images[0]
     image.cls(0)  # 以前の配置の絵が残らないよう、描き込む前に消す
     sprites: dict[str, dict[str, int]] = {}
+    bank = 0
     v = 0
     for entries in build_sheet():
         u = 0
@@ -123,17 +127,26 @@ def main() -> None:
                 # 1行に入りきらないので次の行へ送る（敵が増えても破綻しないようにする）
                 v += row_height
                 u, row_height = 0, 0
+            if v + h > image.height:
+                # 1枚に入りきらないので次のイメージバンクへ送る。位置は sprites.json の
+                # "bank" で持つので、ゲーム側はどのバンクにあっても同じように描ける
+                bank += 1
+                assert bank < banks, f"イメージバンクが足りません（{banks}枚まで）: {name}"
+                image = pyxel.images[bank]
+                image.cls(0)
+                u, v, row_height = 0, 0, 0
             for i, pixels in enumerate(frames):
                 assert len(pixels) == h and all(len(line) == w for line in pixels), name
                 image.set(u + i * w, v, pixels)
             entry = {"u": u, "v": v, "frames": len(frames)}
             if (w, h) != (size, size):
                 entry.update({"w": w, "h": h})
+            if bank:
+                entry["bank"] = bank
             sprites[name] = entry
             u += width
             row_height = max(row_height, h)
         v += row_height
-    assert v <= image.height, f"素材シートの高さ（{image.height}px）を超えています: {v}px"
 
     config.RESOURCE_PATH.parent.mkdir(parents=True, exist_ok=True)
     pyxel.save(str(config.RESOURCE_PATH))
@@ -142,7 +155,10 @@ def main() -> None:
     (config.DATA_DIR / "sprites.json").write_text(
         json.dumps(sprites_json, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
     )
-    print(f"{config.RESOURCE_PATH} と data/sprites.json を更新しました（{len(sprites)} 件、{v}px）")
+    print(
+        f"{config.RESOURCE_PATH} と data/sprites.json を更新しました"
+        f"（{len(sprites)} 件、バンク{bank + 1}枚、最後のバンクは {v}px）"
+    )
     pyxel.quit()
 
 

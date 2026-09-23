@@ -9,7 +9,7 @@ from game.entities.item import ItemInstance, stacks_in_inventory
 
 
 class Inventory:
-    def __init__(self, capacity: int, stack_max: int, item_stack_max: int = 1) -> None:
+    def __init__(self, capacity: int, stack_max: int, item_stack_max: int) -> None:
         self.capacity = capacity
         self.stack_max = stack_max  # 矢など、数を単位で扱うアイテムの1枠あたりの上限
         self.item_stack_max = item_stack_max  # 薬草・食材など、同じ消耗品の1枠あたりの上限

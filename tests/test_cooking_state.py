@@ -298,3 +298,15 @@ def test_a_stack_of_raw_meat_rots_together():
     state.wait()
     assert [(i.id, i.count) for i in state.inventory.items] == [("rotten_meat", 3)]
     assert meat not in state.inventory.items
+
+
+def test_cooking_is_refused_if_the_stack_shrank_after_planning():
+    """材料を決めてから調理するまでに、まとめた枠が減っていたら取りやめる。"""
+    state = new_state()
+    light_campfire(state)
+    herbs = give(state, "herb", count=2)
+    plan = state.plan_cooking([herbs, herbs])
+    assert plan is not None
+    state.inventory.take_one(herbs)  # 途中で1つ減った
+    assert state.apply_cooking(plan) is False
+    assert [(i.id, i.count) for i in state.inventory.items] == [("herb", 1)]

@@ -11,11 +11,12 @@ CATALOG = Catalog.from_data(DATA)
 CAMP = BaseCampParams.from_dict(DATA["balance"]["base_camp"])
 CAPACITY = int(DATA["balance"]["inventory"]["capacity"])
 STACK = int(DATA["balance"]["inventory"]["stack_max"])
+ITEM_STACK = int(DATA["balance"]["inventory"]["item_stack_max"])
 CURSE = DATA["balance"]["equipment"]["curses"][0]
 
 
 def new_meta(funds: int = 0) -> MetaProgress:
-    meta = MetaProgress.new(CAPACITY, STACK, CAMP)
+    meta = MetaProgress.new(CAPACITY, STACK, ITEM_STACK, CAMP)
     meta.funds = funds
     return meta
 

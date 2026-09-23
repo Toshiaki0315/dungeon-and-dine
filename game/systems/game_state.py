@@ -494,7 +494,13 @@ class GameState:
 
     def apply_cooking(self, plan: CookPlan) -> bool:
         """調理の結果を反映する（1ターン消費）。材料は成否にかかわらず消費する。"""
-        if self.is_game_over or any(m not in self.inventory.items for m in plan.materials):
+        materials = plan.materials
+        if (
+            self.is_game_over
+            or any(m not in self.inventory.items for m in materials)
+            # まとめた枠から持っている数より多く使おうとしていないか、使う直前にも確かめる
+            or any(_times_chosen(materials, m) > m.count for m in materials)
+        ):
             return False
         p = self.player
         names = "・".join(highlight(m.definition.name) for m in plan.materials)

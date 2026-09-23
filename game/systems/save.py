@@ -241,7 +241,10 @@ def load_meta(save_dir: Path, params: GameParams, camp: BaseCampParams) -> MetaP
 
 def new_meta(params: GameParams, camp: BaseCampParams) -> MetaProgress:
     return MetaProgress.new(
-        params.inventory_capacity, params.inventory_stack_max, camp, params.inventory_item_stack_max
+        params.inventory_capacity,
+        params.inventory_stack_max,
+        params.inventory_item_stack_max,
+        camp,
     )
 
 

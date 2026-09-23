@@ -12,7 +12,7 @@ RAT_MEAT = CATALOG.items["rat_meat"]
 
 
 def test_add_until_capacity():
-    inventory = Inventory(capacity=3, stack_max=99)
+    inventory = Inventory(capacity=3, stack_max=99, item_stack_max=1)
     for _ in range(3):
         assert inventory.add(ItemInstance(HERB))
     assert inventory.is_full
@@ -23,7 +23,7 @@ def test_add_until_capacity():
 
 
 def test_arrows_stack_up_to_limit_per_slot():
-    inventory = Inventory(capacity=5, stack_max=99)
+    inventory = Inventory(capacity=5, stack_max=99, item_stack_max=1)
     inventory.add(ItemInstance(ARROW, 95))
     inventory.add(ItemInstance(ARROW, 10))
     assert [item.count for item in inventory.items] == [99, 6]
@@ -31,7 +31,7 @@ def test_arrows_stack_up_to_limit_per_slot():
 
 
 def test_arrows_merge_into_existing_stack_even_when_full():
-    inventory = Inventory(capacity=1, stack_max=99)
+    inventory = Inventory(capacity=1, stack_max=99, item_stack_max=1)
     inventory.add(ItemInstance(ARROW, 50))
     assert inventory.is_full
     assert inventory.add(ItemInstance(ARROW, 49))
@@ -40,7 +40,7 @@ def test_arrows_merge_into_existing_stack_even_when_full():
 
 
 def test_take_one_splits_stack_and_frees_slot():
-    inventory = Inventory(capacity=5, stack_max=99)
+    inventory = Inventory(capacity=5, stack_max=99, item_stack_max=1)
     inventory.add(ItemInstance(ARROW, 2))
     arrow = inventory.items[0]
     one = inventory.take_one(arrow)
@@ -50,7 +50,7 @@ def test_take_one_splits_stack_and_frees_slot():
 
 
 def test_find_by_id():
-    inventory = Inventory(capacity=5, stack_max=99)
+    inventory = Inventory(capacity=5, stack_max=99, item_stack_max=1)
     herb = ItemInstance(HERB)
     inventory.add(herb)
     assert inventory.find("herb") is herb

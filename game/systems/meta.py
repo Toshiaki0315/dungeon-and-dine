@@ -135,8 +135,8 @@ class MetaProgress:
         cls,
         inventory_capacity: int,
         stack_max: int,
+        item_stack_max: int,
         params: BaseCampParams,
-        item_stack_max: int = 1,
     ) -> MetaProgress:
         return cls(
             loadout=Loadout(Inventory(inventory_capacity, stack_max, item_stack_max)),

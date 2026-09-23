@@ -454,7 +454,7 @@ def test_big_bag_widens_the_inventory_for_this_run():
 
 def test_items_beyond_the_camp_capacity_are_carried_into_the_next_run():
     state = new_state()
-    loadout = Loadout(Inventory(2, PARAMS.inventory_stack_max))
+    loadout = Loadout(Inventory(2, PARAMS.inventory_stack_max, PARAMS.inventory_item_stack_max))
     loadout.items.items = [
         ItemInstance(CATALOG.items["knife"]) for _ in range(4)
     ]  # 袋で広げて持ち帰った
