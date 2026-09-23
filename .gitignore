@@ -26,6 +26,9 @@ docs/cooking_cutin_concept.jpg
 
 # 美咲フォントは再配布が許諾されているため同梱する（assets/fonts/LICENSE を参照）
 
+# デザイン確認用の一覧画像（tools/make_sprite_catalog.py がいつでも作り直せる）
+sprite_catalog/
+
 # ビルド成果物（配布物は GitHub Releases などで公開する）
 build/
 dist/

@@ -23,6 +23,7 @@
 - Lint / フォーマット: `.venv/bin/ruff check .` / `.venv/bin/ruff format .`
 - 仮素材の再生成: `.venv/bin/python tools/make_placeholder_sprites.py`（`resources.pyxres` と `data/sprites.json` を上書き。絵のデータは `tools/sprite_art/`）
 - カットイン背景の生成: `.venv/bin/python tools/make_cutin_background.py`（`assets/cutins/cooking_moss.png` を上書き）
+- ドット絵の一覧画像: `.venv/bin/python tools/make_sprite_catalog.py`（`sprite_catalog/` に3枚。画像はリポジトリに含めない）
 - 自動プレイでバランス確認: `.venv/bin/python tools/simulate.py --runs 20`（`--start-floor` / `--start-level` で終盤だけ試せる）
 - 配布用ビルド: `.venv/bin/python tools/build.py`（PyInstaller。3 OS 分は `.github/workflows/build.yml` が各 OS で実行する）
 
