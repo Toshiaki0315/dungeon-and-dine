@@ -460,3 +460,27 @@ def test_items_beyond_the_camp_capacity_are_carried_into_the_next_run():
     ]  # 袋で広げて持ち帰った
     state.take_loadout(loadout)
     assert len(state.inventory.items) == 4
+
+
+def test_the_opening_log_uses_the_chosen_name():
+    """最初のログは、入力した名前と選んだ見た目で始まる（既定の「レオ」ではない）。"""
+    state = GameState(1, QUIET, player_name="はなこ", appearance="mage")
+    assert state.player.name == "はなこ" and state.player.appearance == "mage"
+    assert "はなこは迷宮の奥へ足を踏み入れた。" in log_text(state)
+
+
+def test_departing_gives_the_starting_ration():
+    """出発のたびに保存食を1個持たせる（仕様書 11.2）。"""
+    state = new_state()
+    state.inventory.items.clear()
+    state.add_starting_items()
+    assert [(i.id, i.count) for i in state.inventory.items] == [("ration", 1)]
+
+
+def test_starting_items_are_skipped_when_there_is_no_room():
+    state = new_state()
+    state.inventory.items.clear()
+    state.inventory.capacity = 1
+    state.inventory.add(ItemInstance(CATALOG.items["knife"]))
+    state.add_starting_items()
+    assert [i.id for i in state.inventory.items] == ["knife"]

@@ -40,12 +40,13 @@ class BaseCampParams:
     inventory_expansion: Expansion
     storage_expansion: Expansion
     bundles: Mapping[str, int]  # 道具屋でまとめ売りする個数（矢など）
+    starting_items: Mapping[str, int]  # 出発のたびに持たせるもの（仕様書 11.2 の保存食）
 
     @classmethod
     def from_dict(cls, data: Mapping[str, Any]) -> BaseCampParams:
         required = (
             "storage_capacity", "appraise_cost", "uncurse_cost",
-            "inventory_expansion", "storage_expansion", "bundles",
+            "inventory_expansion", "storage_expansion", "bundles", "starting_items",
         )  # fmt: skip
         missing = [key for key in required if key not in data]
         if missing:
@@ -61,6 +62,7 @@ class BaseCampParams:
                 data["storage_expansion"], "base_camp.storage_expansion"
             ),
             bundles={str(k): int(v) for k, v in data["bundles"].items()},
+            starting_items={str(k): int(v) for k, v in data["starting_items"].items()},
         )
 
 

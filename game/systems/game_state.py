@@ -268,12 +268,19 @@ class GameState:
         notebook: Notebook | None = None,
         *,
         generate: bool = True,
+        player_name: str | None = None,
+        appearance: str | None = None,
     ) -> None:
         self.run_seed = run_seed
         self.params = params
         self.catalog = params.catalog
         self.rng = random.Random(run_seed)  # 戦闘や敵AIなど、プレイ中に使う乱数
         self.player = Player.from_params(params.player)
+        # 名前と見た目は、最初のログ（「〇〇は迷宮の奥へ足を踏み入れた。」）より前に入れる
+        if player_name is not None:
+            self.player.name = player_name
+        if appearance is not None:
+            self.player.appearance = appearance
         self.player.skills = skills_up_to_level(self.player.level, self.catalog.skills)
         self.inventory = Inventory(
             params.inventory_capacity, params.inventory_stack_max, params.inventory_item_stack_max
@@ -392,6 +399,13 @@ class GameState:
             if item is not None:
                 self._set_equipment(slot, item)
         self.update_fov()
+
+    def add_starting_items(self) -> None:
+        """出発のたびに持たせるものを加える（仕様書 11.2。持ちきれなければ入らない）。"""
+        for item_id, count in self.params.base_camp.starting_items.items():
+            definition = self.catalog.items.get(item_id)
+            if definition is not None and count > 0:
+                self.inventory.add(ItemInstance(definition, count))
 
     def equipment_bonus(self) -> EquipmentBonus:
         return compute_bonus(self.player.equipment)

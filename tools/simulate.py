@@ -310,6 +310,7 @@ LATE_ITEMS = (("herb", 5), ("ration", 3), ("mana_herb", 2))
 
 def prepare(state: GameState, floor: int, level: int) -> None:
     """途中の階・レベルから始める（終盤とボス戦の確認用）。"""
+    state.add_starting_items()  # 拠点から出発したときと同じ持ち物にする（仕様書 11.2）
     while state.player.level < level:
         needed = exp_to_next_level(state.player.level, state.params.progression)
         progression.gain_exp(state.player, needed, state.params.progression, state.catalog.skills)

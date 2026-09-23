@@ -190,7 +190,8 @@
     "uncurse_cost": 200,
     "inventory_expansion": {"cost": 1000, "amount": 5, "max_times": 2},
     "storage_expansion": {"cost": 800, "amount": 10, "max_times": 2},
-    "bundles": {"arrow": 10}
+    "bundles": {"arrow": 10},
+    "starting_items": {"ration": 1}
   },
   "fov": {
     "corridor_adjacent": 1,

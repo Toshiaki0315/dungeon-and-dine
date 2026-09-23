@@ -142,10 +142,11 @@ class App:
             run_seed if run_seed is not None else rng.new_run_seed(),
             self.params,
             self.meta.notebook,
+            player_name=self.meta.player_name,
+            appearance=self.meta.appearance,
         )
-        state.player.name = self.meta.player_name
-        state.player.appearance = self.meta.appearance
         state.take_loadout(self.meta.loadout)
+        state.add_starting_items()
         self.meta.loadout.clear()  # 持ち込んだので、拠点には残らない
         self.save_meta()
         return self.dungeon(state, autosave=True)
