@@ -57,7 +57,9 @@ python3.11 -m venv .venv
 .venv/bin/python tools/make_placeholder_sprites.py
 ```
 
-`assets/resources.pyxres` のイメージバンク0と `data/sprites.json` を上書きする。本素材に差し替えたあとは実行しないこと。
+`assets/resources.pyxres` のイメージバンクと `data/sprites.json` を上書きする。絵のデータは `tools/sprite_art/` にある。
+素材はイメージバンク0から詰めていき、1枚（256×256）に入りきらない分は次のバンクへ送る（送った素材は `sprites.json` に `"bank": 1` を持つ）。使ったバンクは消してから描き込むので、
+他の素材を同じバンクに置かないこと。本素材に差し替えたあとは実行しないこと。
 
 ## 操作方法
 
