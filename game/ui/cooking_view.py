@@ -60,6 +60,8 @@ class CookingView:
         elif controls.triggered_repeat("down"):
             self.cursor = (self.cursor + 1) % rows
             self.message = ""
+        elif controls.triggered_repeat("left"):
+            self._unpick()
         elif controls.triggered("confirm"):
             return self._confirm()
         elif controls.triggered("cook"):
@@ -73,7 +75,8 @@ class CookingView:
             return self._cook()
         item = candidates[self.cursor]
         picked = self._picked(item)
-        # まとめて持っている材料は、持っている数まで続けて選べる。それ以上押すと選び直しになる
+        # まとめて持っている材料は、持っている数まで続けて選べる。
+        # これ以上選べないところでもう一度押すと、その材料の選択をまとめて外す（←なら1つずつ）
         if picked and (picked >= item.count or len(self.selected) >= MAX_MATERIALS):
             self.selected = [m for m in self.selected if m is not item]
             self.message = ""
@@ -83,6 +86,18 @@ class CookingView:
             self.selected.append(item)
             self.message = ""
         return None
+
+    def _unpick(self) -> None:
+        """カーソルの材料を1つだけ外す（まとめて持っている材料の選びすぎを戻す）。"""
+        candidates = self.candidates
+        if self.cursor >= len(candidates):
+            return
+        item = candidates[self.cursor]
+        for index in range(len(self.selected) - 1, -1, -1):
+            if self.selected[index] is item:
+                del self.selected[index]  # 最後に選んだ1つを外す
+                self.message = ""
+                return
 
     def _picked(self, item: ItemInstance) -> int:
         return sum(1 for m in self.selected if m is item)

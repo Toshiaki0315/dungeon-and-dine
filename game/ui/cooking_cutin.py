@@ -313,7 +313,7 @@ class CookingCutin:
         if self.phase == Phase.SELECT:
             return [
                 ("材料を2〜3個選んでください。", COLOR_TEXT),
-                ("決定: 選ぶ／外す  C: 調理する  Esc: やめる", COLOR_SUBTEXT),
+                ("決定: 選ぶ／外す  ←: 1つ外す  C: 調理する  Esc: やめる", COLOR_SUBTEXT),
             ]
         plan = self.plan
         if plan is None:

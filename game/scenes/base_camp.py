@@ -29,6 +29,7 @@ COLOR_CURSOR = 5
 COLOR_LINE = 5
 COLOR_TITLE = 10
 COLOR_DISABLED = 13
+COLOR_WARN = 8  # 拠点の枠を超えているときの色
 
 MENU_X, MENU_Y, MENU_W, MENU_H = 16, 48, 192, 232
 PANEL_X, PANEL_W = 224, 400
@@ -246,14 +247,22 @@ class BaseCampScene:
         draw_window(PANEL_X, MENU_Y, PANEL_W, MENU_H)
         frame = pyxel.frame_count // 5
         self.sprites.draw_scaled("campfire", PANEL_X + 152, MENU_Y + 32, 5, frame)
+        # 背負い袋で広げた枠のまま持ち帰ると、拠点の枠より多く持っていることがある（仕様書 11.1）
+        items = self.meta.loadout.items
+        over = len(items) - items.capacity
         lines = [
-            f"持ち物 {len(self.meta.loadout.items)}/{self.meta.loadout.items.capacity}",
-            f"倉庫 {len(self.meta.storage)}/{self.meta.storage.capacity}",
-            f"最深到達 B{self.meta.deepest_floor}F　クリア {self.meta.clears}回",
-            f"レシピ {len(self.meta.notebook.discovered)}/{len(self.catalog.recipes)}",
+            (f"持ち物 {len(items)}/{items.capacity}", COLOR_WARN if over > 0 else COLOR_SUBTEXT),
+            (f"倉庫 {len(self.meta.storage)}/{self.meta.storage.capacity}", COLOR_SUBTEXT),
+            (f"最深到達 B{self.meta.deepest_floor}F　クリア {self.meta.clears}回", COLOR_SUBTEXT),
+            (
+                f"レシピ {len(self.meta.notebook.discovered)}/{len(self.catalog.recipes)}",
+                COLOR_SUBTEXT,
+            ),
         ]
-        for i, line in enumerate(lines):
-            font.draw_text(PANEL_X + 20, MENU_Y + 132 + i * config.LINE_HEIGHT, line, COLOR_SUBTEXT)
+        if over > 0:
+            lines.append((f"枠を{over}超えている。倉庫に預けよう。", COLOR_WARN))
+        for i, (line, color) in enumerate(lines):
+            font.draw_text(PANEL_X + 20, MENU_Y + 132 + i * config.LINE_HEIGHT, line, color)
         if self.message:
             font.draw_text(MENU_X, config.SCREEN_HEIGHT - 24, self.message, COLOR_TEXT)
 

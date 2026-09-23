@@ -310,3 +310,56 @@ def test_cooking_is_refused_if_the_stack_shrank_after_planning():
     state.inventory.take_one(herbs)  # 途中で1つ減った
     assert state.apply_cooking(plan) is False
     assert [(i.id, i.count) for i in state.inventory.items] == [("herb", 1)]
+
+
+# --- 調理画面の材料の選び方（仕様書 14章） ---
+
+
+class FakeControls:
+    """1つのキーだけを押している入力。"""
+
+    def __init__(self, action: str) -> None:
+        self.action = action
+
+    def triggered(self, name: str) -> bool:
+        return name == self.action
+
+    def triggered_repeat(self, name: str) -> bool:
+        return name == self.action
+
+
+def cooking_view_with_a_stack(count=3):
+    from game.ui.cooking_view import CookingView
+
+    state = new_state()
+    light_campfire(state)
+    herbs = give(state, "herb", count=count)
+    view = CookingView(state)
+    view.open()
+    view.cursor = state.cooking_candidates().index(herbs)
+    return view, herbs
+
+
+def press(view, action, times=1):
+    for _ in range(times):
+        view.update(FakeControls(action))
+
+
+def test_left_removes_one_material_from_a_stack():
+    view, herbs = cooking_view_with_a_stack()
+    press(view, "confirm", 3)
+    assert view.selected == [herbs, herbs, herbs]
+    press(view, "left")
+    assert view.selected == [herbs, herbs]  # 1つずつ外せる
+    press(view, "left", 2)
+    assert view.selected == []
+    press(view, "left")  # 選んでいないときに押しても何も起きない
+    assert view.selected == []
+
+
+def test_confirm_clears_the_stack_once_it_cannot_take_more():
+    view, herbs = cooking_view_with_a_stack(count=2)
+    press(view, "confirm", 2)
+    assert view.selected == [herbs, herbs]
+    press(view, "confirm")  # 持っている数まで選んだあとは、まとめて外す
+    assert view.selected == []
