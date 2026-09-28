@@ -50,7 +50,9 @@ class AppearanceSelectScene:
         self.player_name = player_name
         self.on_done = on_done
         self.on_back = on_back
-        self.index = APPEARANCE_IDS.index(current) if current in APPEARANCE_IDS else 0
+        # 開いた直後はどれも選んでいない状態にする（1回のクリックで決まってしまわないように）
+        self.index: int | None = None
+        self.current = APPEARANCE_IDS.index(current) if current in APPEARANCE_IDS else 0
         self.frames = 0
 
     def card_rects(self) -> list[mouse.Rect]:
@@ -70,16 +72,24 @@ class AppearanceSelectScene:
             if index is not None:
                 if index == self.index:  # 選んでいる姿をもう一度クリックすると決まる
                     return self.on_done(APPEARANCE_IDS[index])
-                self.index = index
-                self.frames = 0
+                self._select(index)
             return None
         step = int(c.triggered_repeat("right")) - int(c.triggered_repeat("left"))
         if step:
-            self.index = (self.index + step) % len(APPEARANCES)
-            self.frames = 0  # 選び直したら正面から見せる
+            # まだ選んでいなければ、前回の姿から選び始める
+            self._select(
+                self.current if self.index is None else (self.index + step) % len(APPEARANCES)
+            )
         if c.triggered("confirm"):
-            return self.on_done(APPEARANCE_IDS[self.index])
+            if self.index is None:
+                self._select(self.current)  # 1回目の決定は「選ぶ」まで
+            else:
+                return self.on_done(APPEARANCE_IDS[self.index])
         return None
+
+    def _select(self, index: int) -> None:
+        self.index = index
+        self.frames = 0  # 選び直したら正面から見せる
 
     def draw(self) -> None:
         pyxel.cls(0)
@@ -90,6 +100,8 @@ class AppearanceSelectScene:
         ):
             selected = i == self.index
             draw_window(x, CARD_Y, CARD_W, CARD_H)
+            if i == self.current and not selected:
+                font.draw_text(x + 8, CARD_Y + 6, "前回", COLOR_SUBTEXT)
             if selected:
                 pyxel.rectb(x - 2, CARD_Y - 2, CARD_W + 4, CARD_H + 4, COLOR_TITLE)
                 pyxel.rect(x + 8, LABEL_Y - 4, CARD_W - 16, config.LINE_HEIGHT + 4, COLOR_CURSOR)
@@ -105,7 +117,9 @@ class AppearanceSelectScene:
 
         notes = (
             "見た目だけの違いで、能力は変わりません。",
-            "タイトルの「はじめる」から選び直せます。",
+            "選んでから、もう一度クリック（または決定）で決まります。"
+            if self.index is None
+            else "タイトルの「はじめる」から選び直せます。",
         )
         for i, note in enumerate(notes):
             font.draw_text_centered(
