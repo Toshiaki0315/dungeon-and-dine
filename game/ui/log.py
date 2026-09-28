@@ -95,9 +95,14 @@ class LogHistoryView:
 
     def update(self, controls: Controls) -> bool:
         """閉じたら True を返す。"""
-        if controls.triggered("cancel") or controls.triggered("log_history"):
+        closing = controls.triggered("cancel") or controls.triggered("log_history")
+        if closing or controls.clicked() is not None or controls.right_clicked():
             return True
         max_scroll = max(0, len(_wrapped(self.log.entries)) - HISTORY_LINES)
+        wheel = controls.wheel()
+        if wheel:
+            self.scroll = max(0, min(max_scroll, self.scroll + wheel))
+            return False
         if controls.triggered_repeat("up"):
             self.scroll = min(max_scroll, self.scroll + 1)
         elif controls.triggered_repeat("down"):
@@ -110,5 +115,5 @@ class LogHistoryView:
         end = len(lines) - self.scroll
         for i, line in enumerate(lines[max(0, end - HISTORY_LINES) : end]):
             draw_markup_line(8, 32 + i * config.LINE_HEIGHT, line, COLOR_TEXT)
-        hint = "↑↓: スクロール  L / Esc: 閉じる"
+        hint = "↑↓/ホイール: スクロール  L / Esc / クリック: 閉じる"
         font.draw_text(8, config.SCREEN_HEIGHT - 22, hint, COLOR_HINT)

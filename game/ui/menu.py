@@ -7,7 +7,7 @@ from collections.abc import Callable
 import pyxel
 
 from game import config
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 
 COLOR_WINDOW_BG = 0
@@ -31,10 +31,37 @@ class ConfirmDialog:
         self.on_yes = on_yes
         self.selected = 0
 
+    def _layout(self) -> tuple[int, int, int, int]:
+        """ウィンドウの位置と大きさ（描画とクリック判定で同じ値を使う）。"""
+        w = max(font.text_width(self.message) + 48, 240)
+        h = 80
+        return (
+            (config.SCREEN_WIDTH - w) // 2,
+            config.MAP_TOP + (config.MAP_VIEW_HEIGHT - h) // 2,
+            w,
+            h,
+        )
+
+    def option_rects(self) -> list[mouse.Rect]:
+        y = self._layout()[1]
+        return [
+            (config.SCREEN_WIDTH // 2 - 80 + i * 96, y + 44, font.text_width(label) + 16, 24)
+            for i, label in enumerate(self.OPTIONS)
+        ]
+
     def update(self, controls: Controls) -> bool:
         """ダイアログを閉じたら True を返す。"""
-        if controls.triggered("cancel"):
+        if controls.triggered("cancel") or controls.right_clicked():
             return True
+        click = controls.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self.option_rects())
+            if index is not None:
+                self.selected = index
+                if index == 0:
+                    self.on_yes()
+                return True
+            return False
         if any(controls.triggered_repeat(a) for a in ("left", "right", "up", "down")):
             self.selected = 1 - self.selected
         elif controls.triggered("confirm"):
@@ -44,14 +71,10 @@ class ConfirmDialog:
         return False
 
     def draw(self) -> None:
-        w = max(font.text_width(self.message) + 48, 240)
-        h = 80
-        x = (config.SCREEN_WIDTH - w) // 2
-        y = config.MAP_TOP + (config.MAP_VIEW_HEIGHT - h) // 2
+        x, y, w, h = self._layout()
         draw_window(x, y, w, h)
         font.draw_text_centered(y + 16, self.message, COLOR_TEXT)
-        for i, label in enumerate(self.OPTIONS):
-            ox = config.SCREEN_WIDTH // 2 - 72 + i * 96
+        for i, (label, rect) in enumerate(zip(self.OPTIONS, self.option_rects(), strict=True)):
             if i == self.selected:
-                pyxel.rect(ox - 8, y + 44, font.text_width(label) + 16, 24, COLOR_CURSOR)
-            font.draw_text(ox, y + 48, label, COLOR_TEXT)
+                pyxel.rect(*rect, COLOR_CURSOR)
+            font.draw_text(rect[0] + 8, y + 48, label, COLOR_TEXT)

@@ -43,7 +43,7 @@ def draw_full_map(floor: Floor, fog: FogMap, player_pos: tuple[int, int], title:
         px, py = player_pos
         pyxel.rect(ox + px * CELL_W, oy + py * CELL_H, CELL_W, CELL_H, COLOR_PLAYER)
 
-    font.draw_text(8, config.SCREEN_HEIGHT - 22, "M / Esc: 閉じる", COLOR_HINT)
+    font.draw_text(8, config.SCREEN_HEIGHT - 22, "M / Esc / クリック: 閉じる", COLOR_HINT)
 
 
 def _tile_color(floor: Floor, x: int, y: int) -> int | None:

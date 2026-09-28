@@ -12,7 +12,7 @@ import pyxel
 from game import config
 from game.entities.item import SLOT_NAMES, SLOTS, ItemInstance
 from game.systems.game_state import GameState
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.inventory_view import draw_item_row
 from game.ui.menu import draw_window
@@ -59,11 +59,37 @@ class EquipmentView:
         ]
         return ([None] if current is not None else []) + list(items)
 
+    def slot_row_at(self, pos: mouse.Pos) -> int | None:
+        return mouse.index_at(
+            pos, X + 8, Y + 38, W - 16, config.LINE_HEIGHT + 4, len(SLOTS), config.LINE_HEIGHT
+        )
+
+    def choice_row_at(self, pos: mouse.Pos) -> int | None:
+        """選択肢のどれをクリックしたか（画面に出ている範囲だけ）。"""
+        choices = self.choices()
+        start = max(0, self.choice_cursor - CHOICE_ROWS + 1)
+        visible = min(CHOICE_ROWS, len(choices) - start)
+        row = mouse.index_at(pos, CHOICE_X + 6, Y + 38, CHOICE_W - 12, config.LINE_HEIGHT, visible)
+        return None if row is None else start + row
+
     def update(self, controls: Controls) -> EquipRequest | bool | None:
         """付け替えの要求、閉じるなら True、それ以外は None を返す。"""
         if not self.choosing:
-            if controls.triggered("cancel") or controls.triggered("equipment"):
+            if (
+                controls.triggered("cancel")
+                or controls.triggered("equipment")
+                or controls.right_clicked()
+            ):
                 return True
+            click = controls.clicked()
+            if click is not None:
+                index = self.slot_row_at(click)
+                if index is not None:
+                    self.slot_cursor = index
+                    if self.choices():
+                        self.choosing = True
+                        self.choice_cursor = 0
+                return None
             if controls.triggered_repeat("up"):
                 self.slot_cursor = (self.slot_cursor - 1) % len(SLOTS)
             elif controls.triggered_repeat("down"):
@@ -74,7 +100,15 @@ class EquipmentView:
             return None
 
         choices = self.choices()
-        if controls.triggered("cancel") or not choices:
+        click = controls.clicked()
+        if click is not None:
+            index = self.choice_row_at(click)
+            if index is None or not choices:
+                self.choosing = False  # 選択肢の外をクリックしたら戻る
+                return None
+            self.choosing = False
+            return EquipRequest(self.slot, choices[index])
+        if controls.triggered("cancel") or controls.right_clicked() or not choices:
             self.choosing = False
         elif controls.triggered_repeat("up"):
             self.choice_cursor = (self.choice_cursor - 1) % len(choices)
@@ -109,7 +143,11 @@ class EquipmentView:
         pyxel.line(X + 8, Y + H - 52, X + W - 10, Y + H - 52, COLOR_LINE)
         power = f"攻撃力 {stats.atk}  防御力 {stats.defense}"
         font.draw_text(X + 16, Y + H - 44, power, COLOR_TEXT)
-        hint = "決定: 付け替える  Esc: 戻る" if self.choosing else "決定: 選ぶ  E / Esc: 閉じる"
+        hint = (
+            "決定/クリック: 付け替える  Esc / 右クリック: 戻る"
+            if self.choosing
+            else "決定/クリック: 選ぶ  E / Esc / 右クリック: 閉じる"
+        )
         font.draw_text(X + 16, Y + H - 22, hint, COLOR_SUBTEXT)
 
         if self.choosing:

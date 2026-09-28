@@ -11,7 +11,7 @@ from game import config
 from game.entities.item import ItemInstance
 from game.systems.cooking import MAX_MATERIALS, MIN_MATERIALS
 from game.systems.game_state import GameState
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 
@@ -49,10 +49,24 @@ class CookingView:
     def candidates(self) -> list[ItemInstance]:
         return self.state.cooking_candidates()
 
+    def row_at(self, pos: mouse.Pos) -> int | None:
+        """クリックした行（材料の番号。最後の行は「調理する」）。"""
+        rows = len(self.candidates) + 1
+        visible = min(ROWS, max(0, rows - self.scroll))
+        row = mouse.index_at(pos, LIST_X + 8, LIST_Y + 36, LIST_W - 16, config.LINE_HEIGHT, visible)
+        return None if row is None else self.scroll + row
+
     def update(self, controls: Controls) -> list[ItemInstance] | str | None:
         """材料が決まったらその一覧、やめるなら CANCELLED、それ以外は None を返す。"""
-        if controls.triggered("cancel"):
+        if controls.triggered("cancel") or controls.right_clicked():
             return CANCELLED
+        click = controls.clicked()
+        if click is not None:
+            index = self.row_at(click)
+            if index is not None:
+                self.cursor = index
+                return self._confirm()
+            return None
         rows = len(self.candidates) + 1  # 最後の行は「調理する」
         if controls.triggered_repeat("up"):
             self.cursor = (self.cursor - 1) % rows

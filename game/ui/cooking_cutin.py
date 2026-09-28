@@ -117,7 +117,8 @@ class CookingCutin:
                 self._start(Phase.RESULT)
         elif self.phase == Phase.RESULT:
             self._update_steam()
-            if controls.triggered("confirm") or controls.triggered("cancel"):
+            leaving = controls.triggered("confirm") or controls.triggered("cancel")
+            if leaving or controls.clicked() is not None or controls.right_clicked():
                 return self._leave()
         elif self.phase == Phase.WIPE_OUT:
             self._update_steam()
@@ -313,7 +314,10 @@ class CookingCutin:
         if self.phase == Phase.SELECT:
             return [
                 ("材料を2〜3個選んでください。", COLOR_TEXT),
-                ("決定: 選ぶ／外す  ←: 1つ外す  C: 調理する  Esc: やめる", COLOR_SUBTEXT),
+                (
+                    "決定/クリック: 選ぶ  ←: 1つ外す  C: 調理する  Esc / 右クリック: やめる",
+                    COLOR_SUBTEXT,
+                ),
             ]
         plan = self.plan
         if plan is None:

@@ -62,10 +62,18 @@ class Controls:
         return any(pyxel.btnp(key, hold=frames, repeat=frames) for key in self._bindings[action])
 
     def clicked(self) -> tuple[int, int] | None:
-        """左クリックした瞬間の画面座標。"""
+        """左クリックした瞬間の画面座標（決定に対応する）。"""
         if pyxel.btnp(pyxel.MOUSE_BUTTON_LEFT):
             return (pyxel.mouse_x, pyxel.mouse_y)
         return None
+
+    def right_clicked(self) -> bool:
+        """右クリックした瞬間（キャンセルに対応する）。"""
+        return pyxel.btnp(pyxel.MOUSE_BUTTON_RIGHT)
+
+    def wheel(self) -> int:
+        """ホイールの回転量（手前に回すと負。一覧のスクロールに使う）。"""
+        return pyxel.mouse_wheel
 
     def direction_command(self) -> MoveCommand | TurnCommand | None:
         """方向入力を移動（または Ctrl / RB で向きだけ変える）コマンドに変換する。
@@ -103,18 +111,17 @@ class Controls:
         if not self._press_order:
             return None
 
-        if not self.pressed("diagonal_modifier"):
-            return _DIRECTION_ACTIONS[self._press_order[-1]]
-
-        # Shift / LB を押している間は、テンキーの斜めか、縦横2方向の同時押しだけを受け付ける
+        # テンキーの斜めと、縦横2方向の同時押しは斜めとして扱う（Shift を押さなくてもよい）
         latest_diagonal = self._latest(_DIAGONAL_ACTIONS)
         if latest_diagonal is not None:
             return latest_diagonal
         vertical = self._latest({"up": Direction.UP, "down": Direction.DOWN})
         horizontal = self._latest({"left": Direction.LEFT, "right": Direction.RIGHT})
-        if vertical is None or horizontal is None:
-            return None
-        return Direction.from_delta(horizontal.dx, vertical.dy)
+        if vertical is not None and horizontal is not None:
+            return Direction.from_delta(horizontal.dx, vertical.dy)
+        if self.pressed("diagonal_modifier"):
+            return None  # Shift / LB を押している間は、斜めだけを受け付ける
+        return _DIRECTION_ACTIONS[self._press_order[-1]]
 
     def _latest(self, actions: dict[str, Direction]) -> Direction | None:
         for action in reversed(self._press_order):

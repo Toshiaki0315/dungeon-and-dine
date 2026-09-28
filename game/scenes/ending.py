@@ -12,7 +12,7 @@ import pyxel
 
 from game import config
 from game.scenes import Scene
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.sprites import SpriteSheet
 
@@ -62,11 +62,27 @@ class EndingScene:
         self.frames = 0
         self.index = 0
 
+    def choice_rects(self) -> list[mouse.Rect]:
+        rects: list[mouse.Rect] = []
+        for i, (label, _) in enumerate(CHOICES):
+            width = font.text_width(label)
+            x = (config.SCREEN_WIDTH - width) // 2
+            y = CHOICE_Y + i * (config.LINE_HEIGHT + 8)
+            rects.append((x - 8, y - 2, width + 16, config.LINE_HEIGHT))
+        return rects
+
     def update(self) -> Scene | None:
         self.frames += 1
         if self.frames < INPUT_DELAY_FRAMES:
             return None
         c = self.controls
+        click = c.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self.choice_rects())
+            if index is not None:
+                self.index = index
+                return self.to_dungeon() if CHOICES[index][1] == CHOICE_DIVE else self.to_camp()
+            return None
         step = int(c.triggered_repeat("down")) - int(c.triggered_repeat("up"))
         if step:
             self.index = (self.index + step) % len(CHOICES)
@@ -96,10 +112,7 @@ class EndingScene:
         if self.frames < INPUT_DELAY_FRAMES:
             return
         font.draw_text_centered(CHOICE_Y - 24, "迷宮に果てはない。どうする？", COLOR_HINT)
-        for i, (label, _) in enumerate(CHOICES):
-            y = CHOICE_Y + i * (config.LINE_HEIGHT + 8)
-            width = font.text_width(label)
-            x = (config.SCREEN_WIDTH - width) // 2
+        for i, ((label, _), rect) in enumerate(zip(CHOICES, self.choice_rects(), strict=True)):
             if i == self.index:
-                pyxel.rect(x - 8, y - 2, width + 16, config.LINE_HEIGHT, COLOR_CURSOR)
-            font.draw_text(x, y, label, COLOR_TEXT)
+                pyxel.rect(*rect, COLOR_CURSOR)
+            font.draw_text(rect[0] + 8, rect[1] + 2, label, COLOR_TEXT)

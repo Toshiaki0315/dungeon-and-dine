@@ -9,7 +9,7 @@ import pyxel
 from game import config
 from game.scenes import Scene
 from game.systems.meta import MetaProgress
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.sprites import SpriteSheet
 
@@ -20,6 +20,7 @@ COLOR_CURSOR = 5
 
 MENU_X, MENU_Y = 64, 208
 MENU_STEP = 32
+MENU_W, MENU_H = 200, 24  # クリックを受ける大きさ（カーソルの帯と同じ）
 PICTURE_X, PICTURE_Y, PICTURE_SCALE = 400, 180, 6
 
 
@@ -50,17 +51,33 @@ class TitleScene:
         self.quit_game()
         return None
 
+    def option_rects(self) -> list[mouse.Rect]:
+        return [
+            (MENU_X - 12, MENU_Y + i * MENU_STEP - 4, MENU_W, MENU_H)
+            for i in range(len(self.options))
+        ]
+
     def update(self) -> Scene | None:
         c = self.controls
+        click = c.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self.option_rects())
+            if index is not None:
+                self.cursor = index
+                return self._choose()
         if c.triggered_repeat("up"):
             self.cursor = (self.cursor - 1) % len(self.options)
         elif c.triggered_repeat("down"):
             self.cursor = (self.cursor + 1) % len(self.options)
         elif c.triggered("confirm"):
-            scene = self.options[self.cursor][1]()
-            if scene is not None:
-                return scene
-            self.message = "つづきのデータがない。"
+            return self._choose()
+        return None
+
+    def _choose(self) -> Scene | None:
+        scene = self.options[self.cursor][1]()
+        if scene is not None:
+            return scene
+        self.message = "つづきのデータがない。"
         return None
 
     def draw(self) -> None:
@@ -71,7 +88,7 @@ class TitleScene:
         for i, (label, _) in enumerate(self.options):
             y = MENU_Y + i * MENU_STEP
             if i == self.cursor:
-                pyxel.rect(MENU_X - 12, y - 4, 200, 24, COLOR_CURSOR)
+                pyxel.rect(*self.option_rects()[i], COLOR_CURSOR)
             font.draw_text(MENU_X, y, label, COLOR_TEXT)
 
         frame = pyxel.frame_count // 5

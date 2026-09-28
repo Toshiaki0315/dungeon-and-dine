@@ -244,11 +244,54 @@ class DungeonScene:
         if c.triggered("wait"):
             self.state.wait()
             return
+        click = c.clicked()
+        if click is not None:
+            self._click(click)
+            return
 
         if isinstance(direction_command, MoveCommand):
             self._move(direction_command.direction)
         elif isinstance(direction_command, TurnCommand):
             self.state.face(direction_command.direction)
+
+    def cell_at(self, pos: tuple[int, int]) -> tuple[int, int] | None:
+        """マップの表示範囲のどのマスをクリックしたか。範囲の外は None。"""
+        x, y = pos
+        if not (config.MAP_TOP <= y < config.MAP_TOP + config.MAP_VIEW_HEIGHT):
+            return None
+        floor, player = self.state.floor, self.state.player
+        cam_x, cam_y = camera_origin(
+            player.x,
+            player.y,
+            floor.width,
+            floor.height,
+            config.MAP_VIEW_TILES_W,
+            config.MAP_VIEW_TILES_H,
+        )
+        return cam_x + x // config.TILE_SIZE, cam_y + (y - config.MAP_TOP) // config.TILE_SIZE
+
+    def _click(self, pos: tuple[int, int]) -> None:
+        """コマンドバーのボタンか、隣のマスの敵をクリックしたときの処理。"""
+        index = hit_test(*pos)
+        if index is not None:
+            command_id = COMMANDS[index].id
+            self.command_bar.index = index
+            if self._is_command_enabled(command_id):
+                self._execute_command(command_id)
+            return
+        cell = self.cell_at(pos)
+        if cell is None:
+            return
+        player = self.state.player
+        dx, dy = cell[0] - player.x, cell[1] - player.y
+        if (dx, dy) == (0, 0) or max(abs(dx), abs(dy)) > 1:
+            return  # 隣のマスだけを受け付ける（斜めも含む）
+        if self.state.fog.state(*cell) != Visibility.VISIBLE:
+            return
+        if self.state.floor.monster_at(*cell) is None:
+            return
+        self.state.face(Direction.from_delta(dx, dy))
+        self.state.attack()
 
     def _move(self, direction: Direction) -> None:
         if self.state.move_player(direction) != MoveResult.CONFIRM_TRAP:
@@ -378,7 +421,9 @@ class DungeonScene:
         self.mode = Mode.CONFIRM
 
     def _close_on(self, toggle_action: str) -> None:
-        if self.controls.triggered("cancel") or self.controls.triggered(toggle_action):
+        c = self.controls
+        closing = c.triggered("cancel") or c.triggered(toggle_action)
+        if closing or c.clicked() is not None or c.right_clicked():
             self.mode = Mode.EXPLORE
 
     def _update_dialog(self) -> None:

@@ -15,7 +15,7 @@ from game.systems.meta import (
     ranking_by_floor,
     ranking_by_gold,
 )
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 
@@ -34,10 +34,20 @@ class RankingView:
         self.meta = meta
         self.latest = latest  # 今回の挑戦（一覧の中で色を変えて示す）
         self.tab = 0
+        self._tab_rects: list[mouse.Rect] = []  # 直前に描いたタブの位置（クリック判定に使う）
 
-    def update(self, controls: Controls) -> None:
+    def update(self, controls: Controls) -> bool:
+        """タブを切り替えたら True（クリックを使い切ったことを、呼び出し側に知らせる）。"""
         if controls.triggered_repeat("left") or controls.triggered_repeat("right"):
             self.tab = 1 - self.tab
+            return False
+        click = controls.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self._tab_rects)
+            if index is not None:
+                self.tab = index
+                return True
+        return False
 
     def entries(self) -> list[ScoreEntry]:
         scores = self.meta.scores
@@ -47,12 +57,15 @@ class RankingView:
 
     def draw(self, x: int, y: int, w: int, h: int) -> None:
         draw_window(x, y, w, h)
-        for i, label in enumerate(TABS):
-            tab_x = x + 16 + i * 232
+        self._tab_rects = [
+            (x + 16 + i * 232 - 8, y + 8, font.text_width(label) + 16, 20)
+            for i, label in enumerate(TABS)
+        ]
+        for i, (label, rect) in enumerate(zip(TABS, self._tab_rects, strict=True)):
             if i == self.tab:
-                pyxel.rect(tab_x - 8, y + 8, font.text_width(label) + 16, 20, COLOR_TAB)
-            font.draw_text(tab_x, y + 10, label, COLOR_TEXT)
-        hint = "←→: 切り替え"
+                pyxel.rect(*rect, COLOR_TAB)
+            font.draw_text(rect[0] + 8, y + 10, label, COLOR_TEXT)
+        hint = "←→/クリック: 切り替え"
         font.draw_text(x + w - 16 - font.text_width(hint), y + 10, hint, COLOR_SUBTEXT)
         pyxel.line(x + 8, y + 30, x + w - 10, y + 30, COLOR_LINE)
 

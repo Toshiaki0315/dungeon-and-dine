@@ -11,7 +11,7 @@ from game import config
 from game.entities.item import ItemInstance
 from game.systems.equipment import describe_equipment
 from game.systems.inventory import Inventory
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.log import wrap_text
 from game.ui.menu import draw_window
@@ -88,20 +88,48 @@ class InventoryView:
         self.menu = None
         self.describing = False
 
+    def row_at(self, pos: mouse.Pos) -> int | None:
+        """クリックしたアイテムの番号（画面に出ている範囲だけ）。"""
+        visible = min(ROWS, max(0, len(self.items) - self.scroll))
+        row = mouse.index_at(pos, LIST_X + 8, LIST_Y + 36, LIST_W - 16, config.LINE_HEIGHT, visible)
+        return None if row is None else self.scroll + row
+
+    def menu_row_at(self, pos: mouse.Pos) -> int | None:
+        if self.menu is None:
+            return None
+        return mouse.index_at(
+            pos,
+            LIST_X + LIST_W + 8 + 6,
+            LIST_Y + 6,
+            136 - 12,
+            config.LINE_HEIGHT,
+            len(self.menu),
+        )
+
     def update(self, controls: Controls) -> ItemRequest | bool | None:
         """選ばれた操作、閉じるなら True、それ以外は None を返す。"""
         if self.describing:
-            if controls.triggered("confirm") or controls.triggered("cancel"):
+            closing = controls.triggered("confirm") or controls.triggered("cancel")
+            if closing or controls.clicked() is not None or controls.right_clicked():
                 self.describing = False
             return None
         if self.menu is not None:
             return self._update_menu(controls)
 
-        closing = controls.triggered("cancel") or (
-            self.selection is None and controls.triggered("inventory")
+        closing = (
+            controls.triggered("cancel")
+            or controls.right_clicked()
+            or (self.selection is None and controls.triggered("inventory"))
         )
         if closing:
             return True
+        click = controls.clicked()
+        if click is not None:
+            index = self.row_at(click)
+            if index is not None and index < len(self.items):
+                self.cursor = index
+                return self._choose()
+            return None
         item = self.selected
         if item is None:
             return None
@@ -110,30 +138,50 @@ class InventoryView:
         elif controls.triggered_repeat("down"):
             self.cursor = (self.cursor + 1) % len(self.items)
         elif controls.triggered("confirm"):
-            if self.selection is not None:
-                return ItemRequest(ACTION_TARGET, item)
-            self.menu = self._menu_for(item)
-            self.menu_cursor = 0
+            return self._choose()
         self._clamp()
+        return None
+
+    def _choose(self) -> ItemRequest | None:
+        """アイテムを選んだとき（決定キーとクリックで共通）。"""
+        item = self.selected
+        if item is None:
+            return None
+        if self.selection is not None:
+            return ItemRequest(ACTION_TARGET, item)
+        self.menu = self._menu_for(item)
+        self.menu_cursor = 0
         return None
 
     def _update_menu(self, controls: Controls) -> ItemRequest | None:
         assert self.menu is not None
         item = self.selected
-        if controls.triggered("cancel") or item is None:
+        click = controls.clicked()
+        if click is not None:
+            index = self.menu_row_at(click)
+            if index is None or item is None:
+                self.menu = None  # メニューの外をクリックしたら閉じる
+                return None
+            self.menu_cursor = index
+            return self._apply_menu(item)
+        if controls.triggered("cancel") or controls.right_clicked() or item is None:
             self.menu = None
         elif controls.triggered_repeat("up"):
             self.menu_cursor = (self.menu_cursor - 1) % len(self.menu)
         elif controls.triggered_repeat("down"):
             self.menu_cursor = (self.menu_cursor + 1) % len(self.menu)
         elif controls.triggered("confirm"):
-            action = self.menu[self.menu_cursor][0]
-            self.menu = None
-            if action == ACTION_DESCRIBE:
-                self.describing = True
-            else:
-                return ItemRequest(action, item)
+            return self._apply_menu(item)
         return None
+
+    def _apply_menu(self, item: ItemInstance) -> ItemRequest | None:
+        assert self.menu is not None
+        action = self.menu[self.menu_cursor][0]
+        self.menu = None
+        if action == ACTION_DESCRIBE:
+            self.describing = True
+            return None
+        return ItemRequest(action, item)
 
     def _menu_for(self, item: ItemInstance) -> list[tuple[str, str]]:
         menu: list[tuple[str, str]] = []
@@ -181,7 +229,11 @@ class InventoryView:
             font.draw_text(x + w - 24, y + 38, "▲", COLOR_SUBTEXT)
         if self.scroll + ROWS < len(items):
             font.draw_text(x + w - 24, y + 38 + (ROWS - 1) * config.LINE_HEIGHT, "▼", COLOR_SUBTEXT)
-        hint = "決定: 選ぶ  Esc: やめる" if selecting else "決定: メニュー  I / Esc: 閉じる"
+        hint = (
+            "決定/クリック: 選ぶ  Esc / 右クリック: やめる"
+            if selecting
+            else "決定/クリック: メニュー  I / Esc / 右クリック: 閉じる"
+        )
         font.draw_text(x + 16, y + h - 22, hint, COLOR_SUBTEXT)
 
         if self.menu is not None:

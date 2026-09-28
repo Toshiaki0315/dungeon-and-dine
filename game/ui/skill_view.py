@@ -6,7 +6,7 @@ import pyxel
 
 from game import config
 from game.systems.skills import SkillDef
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.log import wrap_text
 from game.ui.menu import draw_window
@@ -30,11 +30,21 @@ class SkillView:
         self.skills = skills
         self.cursor = max(0, min(self.cursor, len(skills) - 1))
 
+    def row_at(self, pos: mouse.Pos) -> int | None:
+        return mouse.index_at(pos, X + 8, Y + 36, W - 16, config.LINE_HEIGHT, len(self.skills))
+
     def update(self, controls: Controls) -> str | bool | None:
         """選んだスキルの ID、閉じるなら True、それ以外は None を返す。"""
-        if controls.triggered("cancel") or controls.triggered("skills"):
+        if controls.triggered("cancel") or controls.triggered("skills") or controls.right_clicked():
             return True
         if not self.skills:
+            return None
+        click = controls.clicked()
+        if click is not None:
+            index = self.row_at(click)
+            if index is not None:
+                self.cursor = index
+                return self.skills[index].id
             return None
         if controls.triggered_repeat("up"):
             self.cursor = (self.cursor - 1) % len(self.skills)
@@ -66,4 +76,5 @@ class SkillView:
             pyxel.line(X + 8, Y + H - 72, X + W - 10, Y + H - 72, COLOR_LINE)
             for i, line in enumerate(lines):
                 font.draw_text(X + 16, Y + H - 64 + i * config.LINE_HEIGHT, line, COLOR_SUBTEXT)
-        font.draw_text(X + 16, Y + H - 22, "決定: 使う  K / Esc: 閉じる", COLOR_SUBTEXT)
+        hint = "決定/クリック: 使う  K / Esc / 右クリック: 閉じる"
+        font.draw_text(X + 16, Y + H - 22, hint, COLOR_SUBTEXT)

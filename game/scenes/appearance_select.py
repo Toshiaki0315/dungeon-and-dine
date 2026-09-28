@@ -12,7 +12,7 @@ import pyxel
 from game import config
 from game.entities.player import APPEARANCE_IDS, APPEARANCES, player_sprite_name
 from game.scenes import Scene
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 from game.ui.sprites import SpriteSheet
@@ -53,11 +53,26 @@ class AppearanceSelectScene:
         self.index = APPEARANCE_IDS.index(current) if current in APPEARANCE_IDS else 0
         self.frames = 0
 
+    def card_rects(self) -> list[mouse.Rect]:
+        return [
+            (CARD_X + i * (CARD_W + CARD_GAP), CARD_Y, CARD_W, CARD_H)
+            for i in range(len(APPEARANCES))
+        ]
+
     def update(self) -> Scene | None:
         c = self.controls
         self.frames += 1
-        if c.triggered("cancel"):
+        if c.triggered("cancel") or c.right_clicked():
             return self.on_back()
+        click = c.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self.card_rects())
+            if index is not None:
+                if index == self.index:  # 選んでいる姿をもう一度クリックすると決まる
+                    return self.on_done(APPEARANCE_IDS[index])
+                self.index = index
+                self.frames = 0
+            return None
         step = int(c.triggered_repeat("right")) - int(c.triggered_repeat("left"))
         if step:
             self.index = (self.index + step) % len(APPEARANCES)
@@ -70,8 +85,9 @@ class AppearanceSelectScene:
         pyxel.cls(0)
         font.draw_text(16, 12, f"{self.player_name}の姿を選んでください", COLOR_TITLE)
         walk = pyxel.frame_count // config.ANIMATION_TICKS
-        for i, (appearance, label) in enumerate(APPEARANCES):
-            x = CARD_X + i * (CARD_W + CARD_GAP)
+        for i, ((appearance, label), (x, _, _, _)) in enumerate(
+            zip(APPEARANCES, self.card_rects(), strict=True)
+        ):
             selected = i == self.index
             draw_window(x, CARD_Y, CARD_W, CARD_H)
             if selected:
@@ -95,5 +111,5 @@ class AppearanceSelectScene:
             font.draw_text_centered(
                 CARD_Y + CARD_H + 32 + i * config.LINE_HEIGHT, note, COLOR_SUBTEXT
             )
-        hint = "←→: 選ぶ  決定: 決める  Esc: 名前の入力に戻る"
+        hint = "←→/クリック: 選ぶ  決定・もう一度クリック: 決める  Esc / 右クリック: 戻る"
         font.draw_text_centered(config.SCREEN_HEIGHT - 24, hint, COLOR_SUBTEXT)

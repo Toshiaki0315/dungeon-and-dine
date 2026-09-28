@@ -327,6 +327,12 @@ class FakeControls:
     def triggered_repeat(self, name: str) -> bool:
         return name == self.action
 
+    def clicked(self) -> tuple[int, int] | None:
+        return None
+
+    def right_clicked(self) -> bool:
+        return False
+
 
 def cooking_view_with_a_stack(count=3):
     from game.ui.cooking_view import CookingView

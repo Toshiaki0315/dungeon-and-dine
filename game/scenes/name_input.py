@@ -15,7 +15,7 @@ from game import config
 from game.entities.player import PLAYER_NAME, player_sprite_name
 from game.scenes import Scene
 from game.systems.meta import NAME_MAX_LENGTH, MetaProgress
-from game.ui import font, kana
+from game.ui import font, kana, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 from game.ui.sprites import SpriteSheet
@@ -76,18 +76,62 @@ class NameInputScene:
     def grid(self) -> kana.Grid:
         return kana.grid_for(self.page)
 
+    # --- マウスの当たり判定（描画と同じ座標を使う） ---
+
+    def action_rects(self) -> list[mouse.Rect]:
+        rects: list[mouse.Rect] = []
+        x = GRID_X
+        for label, _ in ACTIONS:
+            width = font.text_width(label) + 16
+            rects.append((x - 4, ACTION_Y - 4, width, 24))
+            x += width + 8
+        return rects
+
+    def cell_at(self, pos: mouse.Pos) -> tuple[int, int] | None:
+        """クリックした五十音表のマス（行, 列）。文字のないマスと表の外は None。"""
+        for row_index, row in enumerate(self.grid):
+            for column, char in enumerate(row):
+                if char == kana.FULL_WIDTH_SPACE:
+                    continue
+                rect = (
+                    GRID_X + column * CELL_W - 4,
+                    GRID_Y + row_index * CELL_H - 4,
+                    CELL_W - 4,
+                    CELL_H - 4,
+                )
+                if mouse.inside(pos, rect):
+                    return row_index, column
+        return None
+
     # --- 更新 ---
 
     def update(self) -> Scene | None:
         c = self.controls
-        if c.triggered("cancel"):
+        if c.triggered("cancel") or c.right_clicked():
             return self.on_done(PLAYER_NAME)
+        click = c.clicked()
+        if click is not None:
+            return self._click(click)
         if pyxel.btnp(pyxel.KEY_BACKSPACE, hold=20, repeat=3):
             self.text = self.text[:-1]
             return None
         self._type(pyxel.input_text)  # キーボードからの半角入力
         self._move_cursor()
         if c.triggered("confirm"):
+            return self._press()
+        return None
+
+    def _click(self, pos: mouse.Pos) -> Scene | None:
+        """五十音表のマスか、下のボタンをクリックしたときの処理。"""
+        cell = self.cell_at(pos)
+        if cell is not None:
+            self.on_actions = False
+            self.row, self.column = cell
+            return self._press()
+        index = mouse.index_of(pos, self.action_rects())
+        if index is not None:
+            self.on_actions = True
+            self.action = index
             return self._press()
         return None
 
@@ -152,7 +196,7 @@ class NameInputScene:
         frame = pyxel.frame_count // config.ANIMATION_TICKS
         leader = player_sprite_name(self.appearance, "down")
         self.sprites.draw_scaled(leader, 40, 32, 4, frame)
-        hint = "↑↓←→: 選ぶ  決定: 入力  Esc: 既定の名前"
+        hint = "↑↓←→/クリック: 入力  決定: 入力  Esc / 右クリック: 既定の名前"
         font.draw_text_centered(config.SCREEN_HEIGHT - 24, hint, COLOR_SUBTEXT)
 
     def _draw_name_box(self) -> None:
@@ -176,14 +220,14 @@ class NameInputScene:
                     font.draw_text(x, y, char, COLOR_TEXT)
 
     def _draw_actions(self) -> None:
-        x = GRID_X
+        rects = self.action_rects()
         for index, (label, _) in enumerate(ACTIONS):
-            width = font.text_width(label) + 16
+            rect = rects[index]
             if self.on_actions and index == self.action:
-                pyxel.rect(x - 4, ACTION_Y - 4, width, 24, COLOR_CURSOR)
+                pyxel.rect(*rect, COLOR_CURSOR)
             else:
-                pyxel.rectb(x - 4, ACTION_Y - 4, width, 24, COLOR_SUBTEXT)
-            font.draw_text(x + 4, ACTION_Y + 2, label, COLOR_TEXT)
-            x += width + 8
+                pyxel.rectb(*rect, COLOR_SUBTEXT)
+            font.draw_text(rect[0] + 8, ACTION_Y + 2, label, COLOR_TEXT)
+        x = rects[-1][0] + rects[-1][2] + 8
         page = kana.page_name(self.page)
         font.draw_text(x + 8, ACTION_Y + 2, f"（{page}）", COLOR_SUBTEXT)

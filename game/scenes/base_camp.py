@@ -17,7 +17,7 @@ from game.scenes import Scene
 from game.systems import meta as meta_system
 from game.systems.catalog import Catalog
 from game.systems.meta import BaseCampParams, MetaProgress
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 from game.ui.notebook_view import NotebookView
@@ -104,35 +104,79 @@ class BaseCampScene:
             return None
         return self._update_menu()
 
+    def menu_rects(self) -> list[mouse.Rect]:
+        return [
+            (
+                MENU_X + 8,
+                MENU_Y + 12 + i * config.LINE_HEIGHT * 3 // 2 - 2,
+                MENU_W - 16,
+                config.LINE_HEIGHT,
+            )
+            for i in range(len(FACILITIES))
+        ]
+
+    def list_row_at(self, pos: mouse.Pos, count: int) -> int | None:
+        """一覧のどの行をクリックしたか（画面に出ている範囲だけ）。"""
+        row = mouse.index_at(
+            pos,
+            LIST_X + 8,
+            LIST_Y + 36,
+            LIST_W - 16,
+            config.LINE_HEIGHT,
+            min(ROWS, max(0, count - self.list_scroll)),
+        )
+        return None if row is None else self.list_scroll + row
+
     def _update_menu(self) -> Scene | None:
         c = self.controls
+        click = c.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self.menu_rects())
+            if index is not None:
+                self.cursor = index
+                return self._choose()
+            return None
         if c.triggered_repeat("up"):
             self.cursor = (self.cursor - 1) % len(FACILITIES)
         elif c.triggered_repeat("down"):
             self.cursor = (self.cursor + 1) % len(FACILITIES)
         elif c.triggered("confirm"):
-            facility = FACILITIES[self.cursor][0]
-            if facility == "depart":
-                return self.depart()
-            if facility == "notebook":
-                self.notebook_view.open()
-                self.mode = Mode.NOTEBOOK
-                return None
-            self.facility = facility
-            self.list_cursor = 0
-            self.list_scroll = 0
-            self.column = 0
-            self.message = ""
-            self.mode = Mode.LIST
+            return self._choose()
+        return None
+
+    def _choose(self) -> Scene | None:
+        """施設を選んだときの処理（決定キーとクリックで共通）。"""
+        facility = FACILITIES[self.cursor][0]
+        if facility == "depart":
+            return self.depart()
+        if facility == "notebook":
+            self.notebook_view.open()
+            self.mode = Mode.NOTEBOOK
+            return None
+        self.facility = facility
+        self.list_cursor = 0
+        self.list_scroll = 0
+        self.column = 0
+        self.message = ""
+        self.mode = Mode.LIST
         return None
 
     def _update_list(self) -> None:
         c = self.controls
-        if c.triggered("cancel"):
+        if c.triggered("cancel") or c.right_clicked():
             self.mode = Mode.MENU
             self.message = ""
             return
         entries = self._entries()
+        click = c.clicked()
+        if click is not None:
+            index = self.list_row_at(click, len(entries))
+            if index is not None and index < len(entries):
+                self.list_cursor = index
+                self.message = self._apply(entries[index])
+                self.save_meta()
+            self._clamp(len(entries))
+            return
         if self.facility == "storage" and (
             c.triggered_repeat("left") or c.triggered_repeat("right")
         ):
@@ -293,9 +337,9 @@ class BaseCampScene:
                 font.draw_text(x, y, entry.detail, COLOR_SUBTEXT)
         if self.message:
             font.draw_text(LIST_X + 16, LIST_Y + LIST_H - 44, self.message, COLOR_TEXT)
-        hint = "決定: 選ぶ  Esc: 戻る"
+        hint = "決定/クリック: 選ぶ  Esc / 右クリック: 戻る"
         if self.facility == "storage":
-            hint = "決定: 預ける／引き出す  ←→: 切り替え  Esc: 戻る"
+            hint = "決定/クリック: 預ける／引き出す  ←→: 切り替え  Esc / 右クリック: 戻る"
         font.draw_text(LIST_X + 16, LIST_Y + LIST_H - 22, hint, COLOR_SUBTEXT)
 
     def _column_label(self) -> str:

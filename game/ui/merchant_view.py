@@ -11,7 +11,7 @@ from game import config
 from game.entities.item import ItemDef, ItemInstance
 from game.systems import merchant
 from game.systems.game_state import GameState
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 
@@ -71,15 +71,28 @@ class MerchantView:
 
     # --- 更新 ---
 
+    def row_at(self, pos: mouse.Pos) -> int | None:
+        """クリックした行（画面に出ている範囲だけ）。"""
+        visible = min(ROWS, max(0, self._rows() - self.scroll))
+        row = mouse.index_at(pos, LIST_X + 8, LIST_Y + 38, LIST_W - 16, config.LINE_HEIGHT, visible)
+        return None if row is None else self.scroll + row
+
     def update(self, controls: Controls) -> bool:
         """閉じるなら True を返す。"""
-        if controls.triggered("cancel"):
+        if controls.triggered("cancel") or controls.right_clicked():
             if self.mode == "menu":
                 return True
             self.mode = "menu"
             self.cursor = 0
             self.scroll = 0
             return False
+        click = controls.clicked()
+        if click is not None:
+            index = self.row_at(click)
+            if index is None or index >= self._rows():
+                return False
+            self.cursor = index
+            return self._confirm()
 
         count = self._rows()
         if count:

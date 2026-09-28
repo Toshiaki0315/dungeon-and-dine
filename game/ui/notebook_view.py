@@ -10,7 +10,7 @@ import pyxel
 from game import config
 from game.systems.catalog import Catalog
 from game.systems.cooking import Notebook, describe_effects
-from game.ui import font
+from game.ui import font, mouse
 from game.ui.input import Controls
 from game.ui.menu import draw_window
 
@@ -37,10 +37,29 @@ class NotebookView:
         self.tab = 0
         self.scroll = 0
 
+    def tab_rects(self) -> list[mouse.Rect]:
+        return [
+            (X + W - 260 + i * 128 - 8, Y + 8, font.text_width(label) + 16, 20)
+            for i, label in enumerate(TABS)
+        ]
+
     def update(self, controls: Controls) -> bool:
         """閉じたら True を返す。"""
         if controls.triggered("cancel") or controls.triggered("notebook"):
             return True
+        click = controls.clicked()
+        if click is not None:
+            index = mouse.index_of(click, self.tab_rects())
+            if index is not None:
+                self.tab = index
+                self.scroll = 0
+            return False
+        if controls.right_clicked():
+            return True
+        wheel = controls.wheel()
+        if wheel:
+            self.scroll = max(0, min(self._max_scroll(), self.scroll - wheel))
+            return False
         if controls.triggered_repeat("left") or controls.triggered_repeat("right"):
             self.tab = 1 - self.tab
             self.scroll = 0

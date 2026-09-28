@@ -44,10 +44,13 @@ class GameOverScene:
 
     def update(self) -> Scene | None:
         self.frames += 1
-        if self.ranking is not None:
-            self.ranking.update(self.controls)
-        if self.frames >= INPUT_DELAY_FRAMES and self.controls.triggered("confirm"):
+        used_click = self.ranking.update(self.controls) if self.ranking is not None else False
+        if self.frames < INPUT_DELAY_FRAMES:
+            return None
+        if self.controls.triggered("confirm") or self.controls.right_clicked():
             return self.to_camp()
+        if not used_click and self.controls.clicked() is not None:
+            return self.to_camp()  # タブ以外をクリックしたら閉じる
         return None
 
     def draw(self) -> None:
@@ -58,4 +61,5 @@ class GameOverScene:
         if self.ranking is not None:
             self.ranking.draw(16, 64, config.SCREEN_WIDTH - 32, 264)
         if self.frames >= INPUT_DELAY_FRAMES:
-            font.draw_text_centered(config.SCREEN_HEIGHT - 24, "Enter: 拠点に戻る", COLOR_HINT)
+            hint = "Enter / クリック: 拠点に戻る"
+            font.draw_text_centered(config.SCREEN_HEIGHT - 24, hint, COLOR_HINT)
