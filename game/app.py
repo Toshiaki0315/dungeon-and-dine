@@ -43,7 +43,7 @@ class App:
                 *self.params.catalog.sprite_names(),
             ],
         )
-        self.cooking_palette = _parse_palette(self.data["palettes"], "cooking")
+        self.cooking_palettes = _parse_palettes(self.data["palettes"])
         if not config.RESOURCE_PATH.exists():
             raise FileNotFoundError(
                 f"{config.RESOURCE_PATH} がありません。"
@@ -172,7 +172,7 @@ class App:
             finish_run=self.finish_run,
             show_ending=self.show_ending,
             save_run=self.autosave,
-            cooking_palette=self.cooking_palette,
+            cooking_palettes=self.cooking_palettes,
             cutin_backgrounds=self.cutin_backgrounds,
             audio=self.audio,
         )
@@ -251,6 +251,18 @@ class App:
 
     def draw(self) -> None:
         self.scene.draw()
+
+
+def _parse_palettes(data: dict[str, Any]) -> dict[str, list[int]]:
+    """料理カットインのパレットを読み込む。"cooking_<エリアID>" があればそのエリア専用にする。"""
+    palettes = {"default": _parse_palette(data, "cooking")}
+    names = data["palettes"]
+    assert isinstance(names, dict)
+    for name in names:
+        area_id = name.removeprefix("cooking_")
+        if name.startswith("cooking_") and area_id:
+            palettes[area_id] = _parse_palette(data, name)
+    return palettes
 
 
 def _parse_palette(data: dict[str, Any], name: str) -> list[int]:

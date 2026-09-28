@@ -1,5 +1,7 @@
 """UI 層のうち、描画を伴わない計算部分のテスト。"""
 
+from game import data_loader
+from game.app import _parse_palettes
 from game.systems.message_log import MessageLog, highlight, strip_markup
 from game.ui.command_bar import COMMANDS, CommandBar, button_rect, hit_test
 from game.ui.hud import is_low
@@ -63,3 +65,16 @@ def test_wrap_ignores_markup_width():
     text = highlight("abcd") + "ef"
     lines = wrap_text(text, 16, lambda s: len(strip_markup(s)) * 4)
     assert [strip_markup(line) for line in lines] == ["abcd", "ef"]
+
+
+# --- 料理カットインのパレット（仕様書 2.4） ---
+
+
+def test_cooking_palettes_are_loaded_per_area():
+    """エリアごとのパレットを読み込み、どれも16色そろっていること。"""
+    palettes = _parse_palettes(data_loader.load_all()["palettes"])
+    assert "default" in palettes  # エリア専用がないときに使う
+    assert {"catacomb", "mine", "abyss", "bottom"} <= set(palettes)
+    assert all(len(colors) == 16 for colors in palettes.values())
+    # 炎と手の色は、どのエリアでも同じ番号で同じ役割にする
+    assert len({tuple(colors[9:11]) for colors in palettes.values()}) == 1

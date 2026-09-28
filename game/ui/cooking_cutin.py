@@ -58,12 +58,13 @@ class CookingCutin:
         self,
         state: GameState,
         settings: CutinSettings,
-        palette: list[int],
+        palettes: dict[str, list[int]],
         backgrounds: dict[str, pyxel.Image] | None = None,
     ) -> None:
         self.state = state
         self.settings = settings
-        self.palette = palette
+        # エリアごとの16色（"default" は共通のもの）。洞窟の色に合わせて背景と炎の見え方を変える
+        self.palettes = palettes
         self.backgrounds = backgrounds or {}
         self.view = CookingView(state)
         self.phase = Phase.DONE
@@ -187,11 +188,16 @@ class CookingCutin:
 
     # --- パレット ---
 
+    def _palette(self) -> list[int]:
+        """いまのエリアの16色。エリア専用がなければ共通のものを使う。"""
+        return self.palettes.get(self.state.area.id) or self.palettes.get("default") or []
+
     def _enter_palette(self) -> None:
-        if self._saved_palette or not self.palette:
+        palette = self._palette()
+        if self._saved_palette or not palette:
             return
         self._saved_palette = list(pyxel.colors)
-        pyxel.colors[:] = self.palette
+        pyxel.colors[:] = palette
 
     def _restore_palette(self) -> None:
         if self._saved_palette:

@@ -112,7 +112,7 @@ class DungeonScene:
         finish_run: Callable[[GameState, bool], Scene],
         show_ending: Callable[[GameState], Scene] | None = None,
         save_run: Callable[[GameState], None] | None = None,
-        cooking_palette: list[int] | None = None,
+        cooking_palettes: dict[str, list[int]] | None = None,
         cutin_backgrounds: dict[str, pyxel.Image] | None = None,
         audio: Audio | None = None,
     ) -> None:
@@ -133,7 +133,7 @@ class DungeonScene:
         self.equipment_view = EquipmentView(state)
         self.skill_view = SkillView()
         self.cutin = CookingCutin(
-            state, state.params.cooking.cutin, cooking_palette or [], cutin_backgrounds
+            state, state.params.cooking.cutin, cooking_palettes or {}, cutin_backgrounds
         )
         self.notebook_view = NotebookView(state.catalog, state.notebook)
         self.merchant_view = MerchantView(state)
